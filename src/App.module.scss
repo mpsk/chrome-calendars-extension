@@ -1,0 +1,89 @@
+:root {
+  --primary-color: #039be5;
+  /* Google Calendar Blue */
+  --header-bg: #039be5;
+  --bg-color: #f5f5f5;
+  --text-color: #333333;
+  --border-color: #e0e0e0;
+  --card-bg: #ffffff;
+  --time-bg-green: #0b8043;
+  --time-bg-red: #d93025;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 350px;
+  height: 550px;
+  font-family: 'Roboto', 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  overflow: hidden;
+  /* Prevent body scroll */
+}
+
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header */
+.appHeader {
+  background-color: var(--header-bg);
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  /* Don't shrink */
+  z-index: 10;
+}
+
+.appTitle {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.headerBtn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+/* Content Area */
+.contentArea {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex-grow: 1;
+  overflow-y: auto;
+  /* Scroll only this area */
+}
+
+/* Account Manager (Hidden by default, maybe toggle?) */
+.accountManagerOverlay {
+  background: white;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}

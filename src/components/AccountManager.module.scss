@@ -1,0 +1,111 @@
+.accountHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+  }
+}
+
+.btnIcon {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f5f5f5;
+    border-color: #bbb;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.danger {
+    color: #d93025;
+
+    &:hover {
+      background-color: #fce8e6;
+      border-color: #d93025;
+    }
+  }
+}
+
+.errorMessage {
+  background-color: #fce8e6;
+  color: #d93025;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.accountList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accountItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f9f9f9;
+  }
+}
+
+.accountInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.accountAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.accountDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+}
+
+.accountEmail {
+  font-size: 12px;
+  color: #666;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-size: 13px;
+}
