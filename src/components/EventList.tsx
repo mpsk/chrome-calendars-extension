@@ -83,8 +83,16 @@ export const EventList = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [accounts, currentRangeEnd, loading, loadingMore]);
 
-  const openEvent = (link: string) => {
-    window.open(link, '_blank');
+  const openEvent = (event: CalendarEvent) => {
+    const account = accounts.find(a => a.id === event.accountId);
+    let url = event.htmlLink;
+    
+    if (account?.email) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}authuser=${encodeURIComponent(account.email)}`;
+    }
+    
+    window.open(url, '_blank');
   };
 
   // Helper to parse date string safely to local midnight
@@ -142,7 +150,7 @@ export const EventList = () => {
                 <div 
                   key={event.id} 
                   className={styles.eventCard}
-                  onClick={() => openEvent(event.htmlLink)}
+                  onClick={() => openEvent(event)}
                 >
                   <div 
                     className={`${styles.timeBlock} ${isAllDay ? styles.allDay : styles.hasTime}`}
