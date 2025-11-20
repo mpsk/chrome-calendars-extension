@@ -4,11 +4,8 @@ import type { UserAccount } from '../types/auth';
 console.log("Background service worker started");
 
 // Create alarm if not exists
-chrome.alarms.get("refresh", (alarm) => {
-  if (!alarm) {
-    chrome.alarms.create("refresh", { periodInMinutes: 15 });
-  }
-});
+// Create or update alarm
+chrome.alarms.create("refresh", { periodInMinutes: 1 });
 
 async function updateBadge(forceRefresh = false) {
   try {
@@ -27,6 +24,20 @@ async function updateBadge(forceRefresh = false) {
     
     // Filter for primary events only
     const primaryEvents = events.filter(e => e.isPrimary);
+
+    // Check for ongoing events (timed only)
+    const ongoingEvent = primaryEvents.find(e => {
+      if (!e.start.dateTime || !e.end.dateTime) return false; // Skip all-day events
+      const start = new Date(e.start.dateTime).getTime();
+      const end = new Date(e.end.dateTime).getTime();
+      return start <= now && end > now;
+    });
+
+    if (ongoingEvent) {
+      chrome.action.setBadgeText({ text: 'Now' });
+      chrome.action.setBadgeBackgroundColor({ color: '#d93025' }); // Red
+      return;
+    }
     
     // Find the next upcoming event
     const nextEvent = primaryEvents
@@ -54,16 +65,11 @@ async function updateBadge(forceRefresh = false) {
       
       chrome.action.setBadgeText({ text });
       
-      // Color coding?
-      // < 15m: Red
-      // < 1h: Orange
-      // > 1h: Blue
-      if (diffMins <= 15) {
-        chrome.action.setBadgeBackgroundColor({ color: '#d93025' }); // Red
-      } else if (diffMins < 60) {
-        chrome.action.setBadgeBackgroundColor({ color: '#f29900' }); // Orange
+      // Use calendar color
+      if (nextEvent.accountColor) {
+        chrome.action.setBadgeBackgroundColor({ color: nextEvent.accountColor });
       } else {
-        chrome.action.setBadgeBackgroundColor({ color: '#1a73e8' }); // Blue
+        chrome.action.setBadgeBackgroundColor({ color: '#1a73e8' }); // Fallback Blue
       }
     } else {
       chrome.action.setBadgeText({ text: '' });
@@ -76,7 +82,7 @@ async function updateBadge(forceRefresh = false) {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "refresh") {
-    updateBadge(true); // Force refresh on alarm
+    updateBadge(false); // Use cached data, let CalendarService handle expiration
   }
 });
 
