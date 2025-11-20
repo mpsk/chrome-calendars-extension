@@ -1,6 +1,12 @@
 import type { UserAccount } from '../types/auth';
 import type { CalendarEvent } from '../services/CalendarService';
 
+const ACCOUNTS_COLORS = {
+  '1': '#039BE5',
+  '2': '#3ad942ff',
+  '3': '#d9be3aff',
+}
+
 // Mock user accounts
 export const mockAccounts: UserAccount[] = [
   {
@@ -67,7 +73,17 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(0, 15, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-2',
     accountId: '1',
-    accountColor: '#039BE5',
+    accountColor: ACCOUNTS_COLORS['1'],
+    isPrimary: true,
+  },
+  {
+    id: 'event-3',
+    summary: 'Planning',
+    start: { dateTime: createDate(0, 18, 0).toISOString() },
+    end: { dateTime: createDate(0, 19, 0).toISOString() },
+    htmlLink: 'https://calendar.google.com/event?eid=event-3',
+    accountId: '2',
+    accountColor: ACCOUNTS_COLORS['2'],
     isPrimary: true,
   },
   {
@@ -77,7 +93,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { date: createDate(1).toISOString().split('T')[0] },
     htmlLink: 'https://calendar.google.com/event?eid=event-3',
     accountId: '2',
-    accountColor: '#D50000',
+    accountColor: ACCOUNTS_COLORS['2'],
   },
   
   // Tomorrow's events
@@ -88,7 +104,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(1, 11, 30).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-4',
     accountId: '1',
-    accountColor: '#039BE5',
+    accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
   {
@@ -98,7 +114,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(1, 13, 30).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-5',
     accountId: '2',
-    accountColor: '#D50000',
+    accountColor: ACCOUNTS_COLORS['2'],
   },
   
   // Day after tomorrow
@@ -109,7 +125,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(2, 16, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-6',
     accountId: '3',
-    accountColor: '#7986CB',
+    accountColor: ACCOUNTS_COLORS['3'],
   },
   {
     id: 'event-7',
@@ -118,7 +134,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(2, 19, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-7',
     accountId: '1',
-    accountColor: '#039BE5',
+    accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
   
@@ -130,7 +146,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { date: createDate(9).toISOString().split('T')[0] },
     htmlLink: 'https://calendar.google.com/event?eid=event-8',
     accountId: '1',
-    accountColor: '#039BE5',
+    accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
   {
@@ -140,7 +156,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(8, 17, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-9',
     accountId: '2',
-    accountColor: '#D50000',
+    accountColor: ACCOUNTS_COLORS['2'],
   },
 ];
 

@@ -120,6 +120,9 @@ export const EventList = () => {
   }, {} as Record<string, CalendarEvent[]>);
 
   const sortedDates = Object.keys(groupedEvents).sort();
+  const todayKey = format(new Date(), 'yyyy-MM-dd');
+  const todayEvents = groupedEvents[todayKey] || [];
+  const futureDates = sortedDates.filter(date => date > todayKey);
 
   console.log('Grouped Events:', groupedEvents);
 
@@ -128,50 +131,80 @@ export const EventList = () => {
   if (events.length === 0 && accounts.length > 0) return <div className={styles.emptyState}>No upcoming events found.</div>;
   if (accounts.length === 0) return <div className={styles.emptyState}>Please add an account to see events.</div>;
 
+  const renderEvent = (event: CalendarEvent) => {
+    const isAllDay = !event.start.dateTime;
+    const startTime = event.start.dateTime ? format(new Date(event.start.dateTime), 'HH:mm') : '';
+    const endTime = event.end.dateTime ? format(new Date(event.end.dateTime), 'HH:mm') : '';
+    
+    // Check if event is done (end time is in the past)
+    // For all-day events, they are done if the day is passed, but here we are rendering them in their respective day group.
+    // So for "Today", an all-day event is not done.
+    const isDone = event.end.dateTime ? new Date(event.end.dateTime) < new Date() : false;
+
+    return (
+      <div 
+        key={event.id} 
+        className={`${styles.eventCard} ${isDone ? styles.isDone : ''}`}
+        onClick={() => openEvent(event)}
+      >
+        <div 
+          className={`${styles.timeBlock} ${isAllDay ? styles.allDay : styles.hasTime}`}
+          style={{ backgroundColor: event.accountColor || undefined }}
+        >
+          {!isAllDay && (
+            <>
+              <span>{startTime}</span>
+              <span>{endTime}</span>
+            </>
+          )}
+        </div>
+        <div className={styles.eventInfo}>
+          <span className={styles.eventTitle}>{event.summary}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.eventList}>
-      {sortedDates.map(dateKey => {
-        const dateEvents = groupedEvents[dateKey];
-        // Parse dateKey (yyyy-MM-dd) safely
-        const [y, m, d] = dateKey.split('-').map(Number);
-        const dateObj = new Date(y, m - 1, d);
-        
-        const dateLabel = format(dateObj, 'EEEE, MMMM d', { locale: uk });
-
-        return (
-          <div key={dateKey} className={styles.dateGroup}>
-            <div className={styles.dateHeader}>{dateLabel}</div>
-            {dateEvents.map(event => {
-              const isAllDay = !event.start.dateTime;
-              const startTime = event.start.dateTime ? format(new Date(event.start.dateTime), 'HH:mm') : '';
-              const endTime = event.end.dateTime ? format(new Date(event.end.dateTime), 'HH:mm') : '';
-
-              return (
-                <div 
-                  key={event.id} 
-                  className={styles.eventCard}
-                  onClick={() => openEvent(event)}
-                >
-                  <div 
-                    className={`${styles.timeBlock} ${isAllDay ? styles.allDay : styles.hasTime}`}
-                    style={{ backgroundColor: event.accountColor || undefined }}
-                  >
-                    {!isAllDay && (
-                      <>
-                        <span>{startTime}</span>
-                        <span>{endTime}</span>
-                      </>
-                    )}
-                  </div>
-                  <div className={styles.eventInfo}>
-                    <span className={styles.eventTitle}>{event.summary}</span>
-                  </div>
-                </div>
-              );
-            })}
+      {todayEvents.length > 0 && (
+        <>
+          <div className={styles.sectionHeader}>Today</div>
+          <div className={styles.dateGroup}>
+            {/* We don't need a date header for "Today" section as the section header serves that purpose, 
+                but usually "Today" implies the date. Let's keep it simple and just list events. 
+                Or maybe we want the date label too? The requirement says "show todays events and next".
+                Let's render the date label for consistency if needed, but "Today" header is strong.
+                Actually, let's render the date label for Today as well to be consistent with the design 
+                or just list them. Let's list them directly under "Today".
+            */}
+             <div className={styles.dateHeader}>{format(new Date(), 'EEEE, MMMM d', { locale: uk })}</div>
+            {todayEvents.map(renderEvent)}
           </div>
-        );
-      })}
+        </>
+      )}
+
+      {futureDates.length > 0 && (
+        <>
+          <div className={styles.sectionHeader}>Next</div>
+          {futureDates.map(dateKey => {
+            const dateEvents = groupedEvents[dateKey];
+            // Parse dateKey (yyyy-MM-dd) safely
+            const [y, m, d] = dateKey.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            
+            const dateLabel = format(dateObj, 'EEEE, MMMM d', { locale: uk });
+
+            return (
+              <div key={dateKey} className={styles.dateGroup}>
+                <div className={styles.dateHeader}>{dateLabel}</div>
+                {dateEvents.map(renderEvent)}
+              </div>
+            );
+          })}
+        </>
+      )}
+      
       {loadingMore && <div className={styles.loadingMore}>Loading more events...</div>}
     </div>
   );

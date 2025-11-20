@@ -10,6 +10,19 @@
   gap: 8px;
 }
 
+.sectionHeader {
+  font-size: 12px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 8px;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
 .dateHeader {
   font-size: 14px;
   color: #666;
@@ -20,6 +33,11 @@
   &::first-letter {
     text-transform: uppercase;
   }
+}
+
+.isDone {
+  opacity: 0.5;
+  background-color: rgba(255, 255, 255, 0.5); // Make background semi-transparent
 }
 
 // Event Item
