@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { CalendarService } from '../services/CalendarService';
-import type { CalendarEvent } from '../services/CalendarService';
-import { useAuthStore } from '../store/useAuthStore';
+import { CalendarService } from '../../services/CalendarService';
+import type { CalendarEvent } from '../../services/CalendarService';
+import { useAuthStore } from '../../store/useAuthStore';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale'; // Ukrainian locale for the screenshot match
 import styles from './EventList.module.scss';

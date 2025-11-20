@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { LogOut, Plus } from 'lucide-react';
 import styles from './AccountManager.module.scss';
-import { mockAccounts } from '../mocks/mockData';
-import type { UserAccount } from '../types/auth';
+import { mockAccounts } from '../../mocks/mockData';
+import type { UserAccount } from '../../types/auth';
 
 // Pure presentational component for Storybook
 const AccountManagerPresentation = ({

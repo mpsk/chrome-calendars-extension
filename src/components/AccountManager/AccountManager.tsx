@@ -1,4 +1,4 @@
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { LogOut, Plus } from 'lucide-react';
 import styles from './AccountManager.module.scss';
 

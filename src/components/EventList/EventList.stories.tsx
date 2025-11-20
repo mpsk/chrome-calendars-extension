@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import styles from './EventList.module.scss';
-import { mockEvents, allDayEvents, timedEvents } from '../mocks/mockData';
-import type { CalendarEvent } from '../services/CalendarService';
+import { mockEvents, allDayEvents, timedEvents } from '../../mocks/mockData';
+import type { CalendarEvent } from '../../services/CalendarService';
 
 // Pure presentational component for Storybook
 const EventListPresentation = ({
