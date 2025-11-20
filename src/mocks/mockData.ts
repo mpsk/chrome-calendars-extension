@@ -18,6 +18,29 @@ export const mockAccounts: UserAccount[] = [
       token: 'mock-token-1',
       expiry: Date.now() + 3600000,
     },
+    calendars: [
+      {
+        id: 'primary-1',
+        summary: 'John Doe',
+        backgroundColor: ACCOUNTS_COLORS['1'],
+        primary: true,
+        visible: true,
+      },
+      {
+        id: 'holidays-1',
+        summary: 'Holidays in Ukraine',
+        backgroundColor: '#0B8043',
+        primary: false,
+        visible: true,
+      },
+      {
+        id: 'birthdays-1',
+        summary: 'Birthdays',
+        backgroundColor: '#F4511E',
+        primary: false,
+        visible: true,
+      }
+    ]
   },
   {
     id: '2',
@@ -28,6 +51,22 @@ export const mockAccounts: UserAccount[] = [
       token: 'mock-token-2',
       expiry: Date.now() + 3600000,
     },
+    calendars: [
+      {
+        id: 'primary-2',
+        summary: 'Jane Smith',
+        backgroundColor: ACCOUNTS_COLORS['2'],
+        primary: true,
+        visible: true,
+      },
+      {
+        id: 'work-2',
+        summary: 'Work Projects',
+        backgroundColor: '#8E24AA',
+        primary: false,
+        visible: true,
+      }
+    ]
   },
   {
     id: '3',
@@ -38,6 +77,15 @@ export const mockAccounts: UserAccount[] = [
       token: 'mock-token-3',
       expiry: Date.now() + 3600000,
     },
+    calendars: [
+      {
+        id: 'primary-3',
+        summary: 'Alex Johnson',
+        backgroundColor: ACCOUNTS_COLORS['3'],
+        primary: true,
+        visible: true,
+      }
+    ]
   },
 ];
 
@@ -94,6 +142,15 @@ export const mockEvents: CalendarEvent[] = [
     htmlLink: 'https://calendar.google.com/event?eid=event-3',
     accountId: '2',
     accountColor: ACCOUNTS_COLORS['2'],
+  },
+  {
+    id: 'event-holiday-1',
+    summary: 'Independence Day 🇺🇦',
+    start: { date: createDate(0).toISOString().split('T')[0] },
+    end: { date: createDate(1).toISOString().split('T')[0] },
+    htmlLink: 'https://calendar.google.com/event?eid=event-holiday-1',
+    accountId: '1',
+    accountColor: '#0B8043', // Green for holidays
   },
   
   // Tomorrow's events
