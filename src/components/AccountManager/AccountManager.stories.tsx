@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { LogOut, Plus } from 'lucide-react';
-import styles from './AccountManager.module.scss';
 import { mockAccounts } from '../../mocks/mockData';
 import type { UserAccount } from '../../types/auth';
+import { useMockAppContext, type MockAppContextProps } from '../../mocks/mockContext';
+import { AccountManager } from './AccountManager';
 
 // Pure presentational component for Storybook
 const AccountManagerPresentation = ({
@@ -15,53 +15,11 @@ const AccountManagerPresentation = ({
   accounts: UserAccount[];
   isLoading: boolean;
   error: string | null;
-  onAddAccount: () => void;
-  onRemoveAccount: (id: string) => void;
+  onAddAccount: MockAppContextProps['addAccount']
+  onRemoveAccount: MockAppContextProps['removeAccount'];
 }) => {
-  return (
-    <div className={styles.accountManager}>
-      <div className={styles.accountHeader}>
-        <h2>Accounts</h2>
-        <button 
-          onClick={onAddAccount} 
-          disabled={isLoading}
-          className={styles.btnIcon}
-          title="Add Account"
-        >
-          <Plus size={20} />
-        </button>
-      </div>
-      
-      {error && <div className={styles.errorMessage}>{error}</div>}
-
-      <div className={styles.accountList}>
-        {accounts.map(account => (
-          <div key={account.id} className={styles.accountItem}>
-            <div className={styles.accountInfo}>
-              <img src={account.picture} alt={account.name} className={styles.accountAvatar} />
-              <div className={styles.accountDetails}>
-                <span className={styles.accountName}>{account.name}</span>
-                <span className={styles.accountEmail}>{account.email}</span>
-              </div>
-            </div>
-            <button 
-              onClick={() => onRemoveAccount(account.id)}
-              className={`${styles.btnIcon} ${styles.danger}`}
-              title="Remove Account"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        ))}
-        
-        {accounts.length === 0 && !isLoading && (
-          <div className={styles.emptyState}>
-            No accounts connected. Click + to add one.
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  useMockAppContext({ accounts, isLoading, error, addAccount: onAddAccount, removeAccount: onRemoveAccount });
+  return <AccountManager />
 };
 
 const meta: Meta<typeof AccountManagerPresentation> = {
@@ -71,8 +29,14 @@ const meta: Meta<typeof AccountManagerPresentation> = {
     layout: 'padded',
   },
   args: {
-    onAddAccount: () => console.log('[Mock] Add account clicked'),
-    onRemoveAccount: (id: string) => console.log('[Mock] Remove account clicked:', id),
+    onAddAccount: () => {
+      console.log('[Mock] Add account clicked');
+      return Promise.resolve();
+    },
+    onRemoveAccount: (id: string) => {
+      console.log('[Mock] Remove account clicked:', id);
+      return Promise.resolve();
+    },
   },
 };
 

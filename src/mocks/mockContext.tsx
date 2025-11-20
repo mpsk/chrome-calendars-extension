@@ -1,58 +1,69 @@
-import type { UserAccount } from '../types/auth';
-import type { CalendarEvent } from '../services/CalendarService';
+import { useEffect } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import { CalendarService } from '../services/CalendarService';
+import { mockAccounts, mockEvents } from '../mocks/mockData';
+import type { AuthState } from '../store/useAuthStore';
 
-// Create a context for mocking
-interface MockContext {
-  mockAuthStore?: {
-    accounts: UserAccount[];
-    isLoading: boolean;
-    error: string | null;
-    addAccount: () => Promise<void>;
-    removeAccount: (id: string) => Promise<void>;
-    init: () => Promise<void>;
+export const mockChromeApi = () => {
+  // Mock chrome API
+  const mockChrome = {
+    storage: {
+      local: {
+        get: async () => ({}),
+        set: async () => {},
+        remove: async () => {},
+      },
+    },
+    runtime: {
+      lastError: undefined,
+    },
   };
-  mockEvents?: CalendarEvent[];
-  mockLoading?: boolean;
-  mockError?: string | null;
+
+  if (typeof window !== 'undefined' && !(window as any).chrome) {
+    (window as any).chrome = mockChrome;
+  }
 }
 
-let currentMockContext: MockContext = {};
+export interface MockAppContextProps extends AuthState {
+  events: typeof mockEvents;
+}
 
-export const setMockContext = (context: MockContext) => {
-  currentMockContext = context;
+export const useMockAppContext = ({
+  isLoading = false, 
+  accounts = mockAccounts,
+  error = null as string | null,
+  events = mockEvents,
+  addAccount = () => Promise.resolve(),
+  removeAccount = () => Promise.resolve(),
+}: Partial<MockAppContextProps>) => {
+    useEffect(() => {
+      
+      mockChromeApi();
+
+      // Reset store
+      useAuthStore.setState({
+        accounts: accounts,
+        isLoading: isLoading,
+        error: error,
+        addAccount,
+        removeAccount
+      });
+  
+      // Mock CalendarService
+      const originalLoadInitial = CalendarService.loadInitialEvents;
+      const originalLoadMore = CalendarService.loadMoreEvents;
+      const originalClearCache = CalendarService.clearCache;
+  
+      CalendarService.loadInitialEvents = async () => events;
+      CalendarService.loadMoreEvents = async () => [];
+      CalendarService.clearCache = async () => {};
+
+      return () => {
+        // Cleanup
+        CalendarService.loadInitialEvents = originalLoadInitial;
+        CalendarService.loadMoreEvents = originalLoadMore;
+        CalendarService.clearCache = originalClearCache;
+      };
+    }, [isLoading, accounts, error, events, addAccount, removeAccount]);
 };
 
-export const getMockContext = () => currentMockContext;
-
-export const clearMockContext = () => {
-  currentMockContext = {};
-};
-
-// Hook to use mocked auth store
-export const useMockAuthStore = async() => {
-  if (currentMockContext.mockAuthStore) {
-    return currentMockContext.mockAuthStore;
-  }
-  // Fallback to real store
-  // const { useAuthStore } = require('../store/useAuthStore');
-  const useAuthStore = (await import('../store/useAuthStore')).useAuthStore;
-  return useAuthStore();
-};
-
-// Mock CalendarService methods
-export const getMockCalendarService = () => {
-  return {
-    loadInitialEvents: async () => {
-      if (currentMockContext.mockLoading) {
-        return new Promise<CalendarEvent[]>(() => {}); // Never resolves
-      }
-      if (currentMockContext.mockError) {
-        throw new Error(currentMockContext.mockError);
-      }
-      return currentMockContext.mockEvents || [];
-    },
-    loadMoreEvents: async () => {
-      return [];
-    },
-  };
-};

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { UserAccount } from '../types/auth';
 import { AuthService } from '../services/AuthService';
 
-interface AuthState {
+export interface AuthState {
   accounts: UserAccount[];
   isLoading: boolean;
   error: string | null;

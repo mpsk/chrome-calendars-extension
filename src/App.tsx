@@ -7,9 +7,9 @@ import { useAuthStore } from './store/useAuthStore';
 
 import { CalendarService } from './services/CalendarService';
 
-function App() {
+export function App() {
   const { init } = useAuthStore();
-  const [showAccounts, setShowAccounts] = useState(false);
+  const [currentView, setCurrentView] = useState<'events' | 'settings'>('events');
 
   useEffect(() => {
     init();
@@ -24,20 +24,17 @@ function App() {
     <div className={styles.appContainer}>
       <Header 
         onRefresh={handleRefresh} 
-        onToggleSettings={() => setShowAccounts(!showAccounts)} 
+        currentView={currentView}
+        onViewChange={setCurrentView}
       />
 
-      {showAccounts && (
-        <div className={styles.accountManagerOverlay}>
-          <AccountManager />
-        </div>
-      )}
-
       <div className={styles.contentArea}>
-        <EventList />
+        {currentView === 'events' ? (
+          <EventList />
+        ) : (
+          <AccountManager />
+        )}
       </div>
     </div>
   );
 }
-
-export default App;

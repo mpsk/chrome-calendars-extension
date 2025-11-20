@@ -1,15 +1,16 @@
 import styles from './Header.module.scss';
-import { Plus, RefreshCw, Settings } from 'lucide-react';
+import { Plus, RefreshCw, Settings, Calendar } from 'lucide-react';
 
 interface HeaderProps {
   onRefresh: () => void;
-  onToggleSettings: () => void;
+  currentView: 'events' | 'settings';
+  onViewChange: (view: 'events' | 'settings') => void;
 }
 
-export const Header = ({ onRefresh, onToggleSettings }: HeaderProps) => {
+export const Header = ({ onRefresh, currentView, onViewChange }: HeaderProps) => {
   return (
     <header className={styles.header}>
-      <h1 className={styles.title}>Button for Google Calendar</h1>
+      <h1 className={styles.title}>Google Calendar Events</h1>
       <div className={styles.actions}>
         <button className={styles.btn} onClick={() => window.open('https://calendar.google.com', '_blank')} title="Open Google Calendar">
           <Plus size={20} />
@@ -17,7 +18,21 @@ export const Header = ({ onRefresh, onToggleSettings }: HeaderProps) => {
         <button className={styles.btn} onClick={onRefresh} title="Refresh">
           <RefreshCw size={18} />
         </button>
-        <button className={styles.btn} onClick={onToggleSettings} title="Settings">
+        
+        <div className={styles.divider} />
+
+        <button 
+          className={`${styles.btn} ${currentView === 'events' ? styles.active : ''}`} 
+          onClick={() => onViewChange('events')} 
+          title="Events"
+        >
+          <Calendar size={18} />
+        </button>
+        <button 
+          className={`${styles.btn} ${currentView === 'settings' ? styles.active : ''}`} 
+          onClick={() => onViewChange('settings')} 
+          title="Settings"
+        >
           <Settings size={18} />
         </button>
       </div>
