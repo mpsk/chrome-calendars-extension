@@ -18,7 +18,7 @@ const withMocks = (
   return (Story) => {
     // Set up mocks synchronously before rendering
     mockChromeApi();
-    
+
     // Reset store state
     useAuthStore.setState({
       accounts,
@@ -31,7 +31,7 @@ const withMocks = (
     // Mock CalendarService methods
     CalendarService.loadInitialEvents = async () => events;
     CalendarService.loadMoreEvents = async () => [];
-    CalendarService.clearCache = async () => {};
+    // CalendarService.clearCache = async () => {};
 
     return <Story />;
   };

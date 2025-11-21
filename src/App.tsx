@@ -17,14 +17,14 @@ export function App() {
 
   const handleRefresh = async () => {
     await refreshAccounts();
-    await CalendarService.clearCache();
+
     window.location.reload();
   };
 
   return (
     <div className={styles.appContainer}>
-      <Header 
-        onRefresh={handleRefresh} 
+      <Header
+        onRefresh={handleRefresh}
         currentView={currentView}
         onViewChange={setCurrentView}
       />

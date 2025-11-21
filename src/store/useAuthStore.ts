@@ -21,6 +21,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   init: async () => {
     const result = await chrome.storage.local.get('accounts');
+    console.log('result.accounts', result.accounts);
     if (result.accounts) {
       set({ accounts: result.accounts as UserAccount[] });
     }
@@ -33,7 +34,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const updatedAccounts = await Promise.all(currentAccounts.map(async (account) => {
         try {
           const calendars = await CalendarService.getUserCalendars(account);
-          
+
           // Merge with existing visibility settings
           const mergedCalendars = calendars.map((cal: any) => {
             const existingCal = account.calendars?.find(c => c.id === cal.id);
@@ -64,7 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const newAccount = account || await AuthService.login();
-      
+
       // Fetch calendars for the new account
       try {
         const calendars = await CalendarService.getUserCalendars(newAccount);
@@ -81,15 +82,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const currentAccounts = get().accounts;
-      
+
       // Check if account already exists
       const existingIndex = currentAccounts.findIndex(a => a.id === newAccount.id);
-      
+
       let updatedAccounts;
       if (existingIndex >= 0) {
         // Update existing account (preserve existing calendar visibility if possible)
         const existingAccount = currentAccounts[existingIndex];
-        
+
         // Merge visibility settings
         if (existingAccount.calendars && newAccount.calendars) {
           newAccount.calendars = newAccount.calendars.map(newCal => {
@@ -107,10 +108,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ accounts: updatedAccounts, isLoading: false });
       await chrome.storage.local.set({ accounts: updatedAccounts });
-      
-      // Clear event cache to force refresh with new calendar settings
-      await CalendarService.clearCache();
-      
+
+
+
     } catch (err: any) {
       set({ error: err.message || 'Failed to add account', isLoading: false });
     }
@@ -121,28 +121,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ accounts: updatedAccounts });
     await chrome.storage.local.set({ accounts: updatedAccounts });
     // Note: We might want to revoke the token here too
-    await CalendarService.clearCache();
+
   },
 
   toggleCalendarVisibility: async (accountId: string, calendarId: string) => {
     const currentAccounts = get().accounts;
     const accountIndex = currentAccounts.findIndex(a => a.id === accountId);
-    
+
     if (accountIndex >= 0) {
       const updatedAccounts = [...currentAccounts];
       const account = { ...updatedAccounts[accountIndex] };
-      
+
       if (account.calendars) {
-        account.calendars = account.calendars.map(cal => 
+        account.calendars = account.calendars.map(cal =>
           cal.id === calendarId ? { ...cal, visible: !cal.visible } : cal
         );
-        
+
         updatedAccounts[accountIndex] = account;
         set({ accounts: updatedAccounts });
         await chrome.storage.local.set({ accounts: updatedAccounts });
-        
-        // Clear event cache to force refresh with new visibility
-        await CalendarService.clearCache();
+
+
       }
     }
   }

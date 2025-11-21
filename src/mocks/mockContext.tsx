@@ -10,8 +10,8 @@ export const mockChromeApi = () => {
     storage: {
       local: {
         get: async () => ({}),
-        set: async () => {},
-        remove: async () => {},
+        set: async () => { },
+        remove: async () => { },
       },
     },
     runtime: {
@@ -29,41 +29,41 @@ export interface MockAppContextProps extends AuthState {
 }
 
 export const useMockAppContext = ({
-  isLoading = false, 
+  isLoading = false,
   accounts = mockAccounts,
   error = null as string | null,
   events = mockEvents,
   addAccount = () => Promise.resolve(),
   removeAccount = () => Promise.resolve(),
 }: Partial<MockAppContextProps>) => {
-    useEffect(() => {
-      
-      mockChromeApi();
+  useEffect(() => {
 
-      // Reset store
-      useAuthStore.setState({
-        accounts: accounts,
-        isLoading: isLoading,
-        error: error,
-        addAccount,
-        removeAccount
-      });
-  
-      // Mock CalendarService
-      const originalLoadInitial = CalendarService.loadInitialEvents;
-      const originalLoadMore = CalendarService.loadMoreEvents;
-      const originalClearCache = CalendarService.clearCache;
-  
-      CalendarService.loadInitialEvents = async () => events;
-      CalendarService.loadMoreEvents = async () => [];
-      CalendarService.clearCache = async () => {};
+    mockChromeApi();
 
-      return () => {
-        // Cleanup
-        CalendarService.loadInitialEvents = originalLoadInitial;
-        CalendarService.loadMoreEvents = originalLoadMore;
-        CalendarService.clearCache = originalClearCache;
-      };
-    }, [isLoading, accounts, error, events, addAccount, removeAccount]);
+    // Reset store
+    useAuthStore.setState({
+      accounts: accounts,
+      isLoading: isLoading,
+      error: error,
+      addAccount,
+      removeAccount
+    });
+
+    // Mock CalendarService
+    const originalLoadInitial = CalendarService.loadInitialEvents;
+    const originalLoadMore = CalendarService.loadMoreEvents;
+    // const originalClearCache = CalendarService.clearCache;
+
+    CalendarService.loadInitialEvents = async () => events;
+    CalendarService.loadMoreEvents = async () => [];
+    // CalendarService.clearCache = async () => {};
+
+    return () => {
+      // Cleanup
+      CalendarService.loadInitialEvents = originalLoadInitial;
+      CalendarService.loadMoreEvents = originalLoadMore;
+      // CalendarService.clearCache = originalClearCache;
+    };
+  }, [isLoading, accounts, error, events, addAccount, removeAccount]);
 };
 
