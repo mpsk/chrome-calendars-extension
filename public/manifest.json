@@ -8,6 +8,10 @@
     "storage",
     "alarms"
   ],
+  "host_permissions": [
+    "https://www.googleapis.com/*",
+    "https://tasks.googleapis.com/*"
+  ],
   "action": {
     "default_popup": "index.html"
   },

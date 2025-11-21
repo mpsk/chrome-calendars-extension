@@ -29,6 +29,7 @@ export const EventList = () => {
       setLoading(true);
       try {
         const initialEvents = await CalendarService.loadInitialEvents(accounts);
+        console.log('=== initialEvents', initialEvents);
         setEvents(initialEvents);
         setError(null);
       } catch (err: any) {
@@ -43,55 +44,61 @@ export const EventList = () => {
     fetchInitial();
   }, [accounts]);
 
-  // Infinite scroll handler
+  // Intersection Observer for infinite scroll
   useEffect(() => {
-    const handleScroll = async () => {
-      if (loading || loadingMore || accounts.length === 0) return;
-
-      const scrolledToBottom = 
-        window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
-
-      if (scrolledToBottom) {
-        setLoadingMore(true);
-        try {
-          const newEvents = await CalendarService.loadMoreEvents(accounts, currentRangeEnd);
-          
-          if (newEvents.length > 0) {
-            setEvents(prev => {
-              // Filter out duplicates just in case
-              const existingIds = new Set(prev.map(e => e.id));
-              const uniqueNewEvents = newEvents.filter(e => !existingIds.has(e.id));
-              return [...prev, ...uniqueNewEvents];
-            });
-            
-            // Update range end
-            setCurrentRangeEnd(prev => {
-              const next = new Date(prev);
-              next.setDate(next.getDate() + 14);
-              return next;
-            });
-          }
-        } catch (err) {
-          console.error('Failed to load more events:', err);
-        } finally {
-          setLoadingMore(false);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && !loadingMore && accounts.length > 0) {
+          loadMore();
         }
-      }
-    };
+      },
+      { threshold: 0.1 } // Trigger when 10% of the sentinel is visible
+    );
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [accounts, currentRangeEnd, loading, loadingMore]);
+    const sentinel = document.getElementById('scroll-sentinel');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => observer.disconnect();
+  }, [loading, loadingMore, accounts, currentRangeEnd]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const newEvents = await CalendarService.loadMoreEvents(accounts, currentRangeEnd);
+
+      if (newEvents.length > 0) {
+        setEvents(prev => {
+          // Filter out duplicates just in case
+          const existingIds = new Set(prev.map(e => e.id));
+          const uniqueNewEvents = newEvents.filter(e => !existingIds.has(e.id));
+          return [...prev, ...uniqueNewEvents];
+        });
+
+        // Update range end
+        setCurrentRangeEnd(prev => {
+          const next = new Date(prev);
+          next.setDate(next.getDate() + 14);
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load more events:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const openEvent = (event: CalendarEvent) => {
     const account = accounts.find(a => a.id === event.accountId);
     let url = event.htmlLink;
-    
+
     if (account?.email) {
       const separator = url.includes('?') ? '&' : '?';
       url = `${url}${separator}authuser=${encodeURIComponent(account.email)}`;
     }
-    
+
     window.open(url, '_blank');
   };
 
@@ -107,11 +114,11 @@ export const EventList = () => {
   const groupedEvents = events.reduce((groups, event) => {
     const dateStr = event.start.dateTime || event.start.date;
     if (!dateStr) return groups;
-    
+
     // Use the safe parser to get the date object
     const dateObj = parseDate(dateStr);
     const dateKey = format(dateObj, 'yyyy-MM-dd');
-    
+
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -135,19 +142,19 @@ export const EventList = () => {
     const isAllDay = !event.start.dateTime;
     const startTime = event.start.dateTime ? format(new Date(event.start.dateTime), 'HH:mm') : '';
     const endTime = event.end.dateTime ? format(new Date(event.end.dateTime), 'HH:mm') : '';
-    
+
     // Check if event is done (end time is in the past)
     // For all-day events, they are done if the day is passed, but here we are rendering them in their respective day group.
     // So for "Today", an all-day event is not done.
     const isDone = event.end.dateTime ? new Date(event.end.dateTime) < new Date() : false;
 
     return (
-      <div 
-        key={event.id} 
+      <div
+        key={event.id}
         className={`${styles.eventCard} ${isDone ? styles.isDone : ''}`}
         onClick={() => openEvent(event)}
       >
-        <div 
+        <div
           className={`${styles.timeBlock} ${isAllDay ? styles.allDay : styles.hasTime}`}
           style={{ backgroundColor: event.accountColor || undefined }}
         >
@@ -171,14 +178,7 @@ export const EventList = () => {
         <>
           <div className={styles.sectionHeader}>Today</div>
           <div className={styles.dateGroup}>
-            {/* We don't need a date header for "Today" section as the section header serves that purpose, 
-                but usually "Today" implies the date. Let's keep it simple and just list events. 
-                Or maybe we want the date label too? The requirement says "show todays events and next".
-                Let's render the date label for consistency if needed, but "Today" header is strong.
-                Actually, let's render the date label for Today as well to be consistent with the design 
-                or just list them. Let's list them directly under "Today".
-            */}
-             <div className={styles.dateHeader}>{format(new Date(), 'EEEE, MMMM d', { locale: uk })}</div>
+            <div className={styles.dateHeader}>{format(new Date(), 'EEEE, MMMM d', { locale: uk })}</div>
             {todayEvents.map(renderEvent)}
           </div>
         </>
@@ -192,7 +192,7 @@ export const EventList = () => {
             // Parse dateKey (yyyy-MM-dd) safely
             const [y, m, d] = dateKey.split('-').map(Number);
             const dateObj = new Date(y, m - 1, d);
-            
+
             const dateLabel = format(dateObj, 'EEEE, MMMM d', { locale: uk });
 
             return (
@@ -204,8 +204,11 @@ export const EventList = () => {
           })}
         </>
       )}
-      
-      {loadingMore && <div className={styles.loadingMore}>Loading more events...</div>}
+
+      {/* Sentinel element for IntersectionObserver */}
+      <div id="scroll-sentinel" style={{ height: '20px', margin: '10px 0' }}>
+        {loadingMore && <div className={styles.loadingMore}>Loading more events...</div>}
+      </div>
     </div>
   );
 };

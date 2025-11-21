@@ -8,7 +8,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { CalendarService } from './services/CalendarService';
 
 export function App() {
-  const { init } = useAuthStore();
+  const { init, refreshAccounts } = useAuthStore();
   const [currentView, setCurrentView] = useState<'events' | 'settings'>('events');
 
   useEffect(() => {
@@ -16,14 +16,15 @@ export function App() {
   }, [init]);
 
   const handleRefresh = async () => {
-    await CalendarService.clearCache();
+    await refreshAccounts();
+
     window.location.reload();
   };
 
   return (
     <div className={styles.appContainer}>
-      <Header 
-        onRefresh={handleRefresh} 
+      <Header
+        onRefresh={handleRefresh}
         currentView={currentView}
         onViewChange={setCurrentView}
       />
