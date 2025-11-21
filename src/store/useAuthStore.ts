@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { AuthService } from '../services/AuthService';
+import { CacheStorage } from '../services/CacheStorage';
 import { CalendarService } from '../services/CalendarService';
 import type { CalendarConfig, UserAccount } from '../types/auth';
 
@@ -12,6 +13,7 @@ export interface AuthState {
   removeAccount: (accountId: string) => Promise<void>;
   toggleCalendarVisibility: (accountId: string, calendarId: string) => Promise<void>;
   refreshAccounts: () => Promise<void>;
+  reconnectAccount: (accountId: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -20,11 +22,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
 
   init: async () => {
-    const result = await chrome.storage.local.get('accounts');
-    console.log('result.accounts', result.accounts);
-    if (result.accounts) {
-      set({ accounts: result.accounts as UserAccount[] });
+    const accounts = await CacheStorage.getAccounts();
+    if (accounts) {
+      set({ accounts });
     }
+
+    // Set up the callback for token refreshes
+    CalendarService.addTokenRefreshListener((account) => {
+      get().addAccount(account);
+    });
   },
 
   refreshAccounts: async () => {
@@ -48,16 +54,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               };
             });
 
-            return { ...account, calendars: mergedCalendars };
-          } catch (err) {
+            return { ...account, calendars: mergedCalendars, status: 'active' as const, errorMessage: undefined };
+          } catch (err: any) {
             console.error(`Failed to refresh calendars for ${account.email}`, err);
+            if (err.message === 'Unauthorized' || err.message.includes('Session expired')) {
+              return { ...account, status: 'error' as const, errorMessage: 'Session expired' };
+            }
             return account; // Keep old state if refresh fails
           }
         }),
       );
 
       set({ accounts: updatedAccounts, isLoading: false });
-      await chrome.storage.local.set({ accounts: updatedAccounts });
+      await CacheStorage.saveAccounts(updatedAccounts);
     } catch (err: any) {
       set({ error: err.message || 'Failed to refresh accounts', isLoading: false });
     }
@@ -109,7 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       set({ accounts: updatedAccounts, isLoading: false });
-      await chrome.storage.local.set({ accounts: updatedAccounts });
+      await CacheStorage.saveAccounts(updatedAccounts);
     } catch (err: any) {
       set({ error: err.message || 'Failed to add account', isLoading: false });
     }
@@ -118,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   removeAccount: async (accountId: string) => {
     const updatedAccounts = get().accounts.filter((a) => a.id !== accountId);
     set({ accounts: updatedAccounts });
-    await chrome.storage.local.set({ accounts: updatedAccounts });
+    await CacheStorage.saveAccounts(updatedAccounts);
     // Note: We might want to revoke the token here too
   },
 
@@ -137,8 +146,70 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         updatedAccounts[accountIndex] = account;
         set({ accounts: updatedAccounts });
-        await chrome.storage.local.set({ accounts: updatedAccounts });
+        await CacheStorage.saveAccounts(updatedAccounts);
       }
+    }
+  },
+
+  reconnectAccount: async (accountId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Force interactive login
+      const newAccount = await AuthService.login();
+
+      const currentAccounts = get().accounts;
+      const accountIndex = currentAccounts.findIndex((a) => a.id === accountId);
+
+      if (accountIndex >= 0) {
+        // Verify email matches
+        if (currentAccounts[accountIndex].email !== newAccount.email) {
+          throw new Error('Email mismatch. Please login with the correct account.');
+        }
+
+        // Update account with new token and clear error
+        const updatedAccounts = [...currentAccounts];
+        updatedAccounts[accountIndex] = {
+          ...updatedAccounts[accountIndex],
+          ...newAccount,
+          status: 'active' as const,
+          errorMessage: undefined,
+        };
+
+        // Refresh calendars for this account to be sure
+        try {
+          const calendars = await CalendarService.getUserCalendars(updatedAccounts[accountIndex]);
+          // Merge visibility
+          if (updatedAccounts[accountIndex].calendars) {
+            updatedAccounts[accountIndex].calendars = calendars.map((cal: any) => {
+              const existingCal = updatedAccounts[accountIndex].calendars?.find((c) => c.id === cal.id);
+              return {
+                id: cal.id,
+                summary: cal.summary,
+                backgroundColor: cal.backgroundColor,
+                primary: !!cal.primary,
+                visible: existingCal ? existingCal.visible : cal.selected !== false,
+              };
+            });
+          } else {
+            updatedAccounts[accountIndex].calendars = calendars.map((cal: any) => ({
+              id: cal.id,
+              summary: cal.summary,
+              backgroundColor: cal.backgroundColor,
+              primary: !!cal.primary,
+              visible: cal.selected !== false,
+            }));
+          }
+        } catch (calError) {
+          console.error('Failed to refresh calendars after reconnect', calError);
+        }
+
+        set({ accounts: updatedAccounts, isLoading: false });
+        await CacheStorage.saveAccounts(updatedAccounts);
+      } else {
+        throw new Error('Account not found');
+      }
+    } catch (err: any) {
+      set({ error: err.message || 'Failed to reconnect account', isLoading: false });
     }
   },
 }));

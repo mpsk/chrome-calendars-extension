@@ -7,7 +7,7 @@ if (!CLIENT_ID) {
   console.error('VITE_AUTH_CLIENT_ID is not set. Please configure your .env file.');
 }
 
-const TOKEN_TTL = 86400;
+const TOKEN_TTL = 3600;
 
 const AUTH_URL = `https://accounts.google.com/o/oauth2/auth`;
 const SCOPES = [

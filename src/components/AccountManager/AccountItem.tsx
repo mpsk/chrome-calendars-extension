@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { UserAccount } from '../../types/auth';
 import styles from './AccountItem.module.scss';
@@ -9,7 +9,7 @@ interface AccountItemProps {
 }
 
 export const AccountItem: React.FC<AccountItemProps> = ({ account }) => {
-  const { removeAccount, toggleCalendarVisibility } = useAuthStore();
+  const { removeAccount, toggleCalendarVisibility, reconnectAccount } = useAuthStore();
 
   return (
     <div className={styles.accountItem}>
@@ -21,14 +21,29 @@ export const AccountItem: React.FC<AccountItemProps> = ({ account }) => {
             <span className={styles.accountEmail}>{account.email}</span>
           </div>
         </div>
-        <button
-          onClick={() => removeAccount(account.id)}
-          className={`${styles.btnIcon} ${styles.danger}`}
-          title="Remove Account"
-        >
-          <LogOut size={16} />
-        </button>
+        <div className={styles.actions}>
+          {account.status === 'error' && (
+            <button
+              onClick={() => reconnectAccount(account.id)}
+              className={`${styles.btnIcon} ${styles.warning}`}
+              title={account.errorMessage || 'Reconnect Account'}
+            >
+              <RefreshCw size={16} />
+            </button>
+          )}
+          <button
+            onClick={() => removeAccount(account.id)}
+            className={`${styles.btnIcon} ${styles.danger}`}
+            title="Remove Account"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
+
+      {account.status === 'error' && (
+        <div className={styles.errorBanner}>{account.errorMessage || 'Session expired. Please reconnect.'}</div>
+      )}
 
       {account.calendars && account.calendars.length > 0 && (
         <div className={styles.calendarList}>

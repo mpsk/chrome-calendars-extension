@@ -1,5 +1,16 @@
+import { CacheStorage } from '../services/CacheStorage';
 import { CalendarService } from '../services/CalendarService';
 import type { UserAccount } from '../types/auth';
+
+// Set up token refresh callback for background context
+CalendarService.addTokenRefreshListener(async (account: UserAccount) => {
+  const accounts = await CacheStorage.getAccounts();
+  const existingIndex = accounts.findIndex((a) => a.id === account.id);
+  if (existingIndex >= 0) {
+    accounts[existingIndex] = account;
+    await CacheStorage.saveAccounts(accounts);
+  }
+});
 
 console.log('Background service worker started');
 

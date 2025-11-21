@@ -19,4 +19,6 @@ export interface UserAccount {
   picture: string;
   token: AuthToken;
   calendars?: CalendarConfig[];
+  status?: 'active' | 'error';
+  errorMessage?: string;
 }
