@@ -1,7 +1,7 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
-import type { UserAccount } from '../../types/auth';
 import { useAuthStore } from '../../store/useAuthStore';
+import type { UserAccount } from '../../types/auth';
 import styles from './AccountItem.module.scss';
 
 interface AccountItemProps {
@@ -32,20 +32,22 @@ export const AccountItem: React.FC<AccountItemProps> = ({ account }) => {
 
       {account.calendars && account.calendars.length > 0 && (
         <div className={styles.calendarList}>
-          {account.calendars.filter(calendar => !calendar.primary).map(calendar => (
-            <label
-              key={calendar.id}
-              className={styles.calendarItem}
-              style={{ '--calendar-color': calendar.backgroundColor } as React.CSSProperties}
-            >
-              <input
-                type="checkbox"
-                checked={calendar.visible}
-                onChange={() => toggleCalendarVisibility(account.id, calendar.id)}
-              />
-              <span>{calendar.summary}</span>
-            </label>
-          ))}
+          {account.calendars
+            .filter((calendar) => !calendar.primary)
+            .map((calendar) => (
+              <label
+                key={calendar.id}
+                className={styles.calendarItem}
+                style={{ '--calendar-color': calendar.backgroundColor } as React.CSSProperties}
+              >
+                <input
+                  type="checkbox"
+                  checked={calendar.visible}
+                  onChange={() => toggleCalendarVisibility(account.id, calendar.id)}
+                />
+                <span>{calendar.summary}</span>
+              </label>
+            ))}
         </div>
       )}
     </div>

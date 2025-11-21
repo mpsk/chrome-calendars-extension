@@ -1,11 +1,11 @@
-import type { UserAccount } from '../types/auth';
 import type { CalendarEvent } from '../services/CalendarService';
+import type { UserAccount } from '../types/auth';
 
 const ACCOUNTS_COLORS = {
   '1': '#039BE5',
   '2': '#3ad942ff',
   '3': '#d9be3aff',
-}
+};
 
 // Mock user accounts
 export const mockAccounts: UserAccount[] = [
@@ -39,8 +39,8 @@ export const mockAccounts: UserAccount[] = [
         backgroundColor: '#F4511E',
         primary: false,
         visible: true,
-      }
-    ]
+      },
+    ],
   },
   {
     id: '2',
@@ -65,8 +65,8 @@ export const mockAccounts: UserAccount[] = [
         backgroundColor: '#8E24AA',
         primary: false,
         visible: true,
-      }
-    ]
+      },
+    ],
   },
   {
     id: '3',
@@ -84,8 +84,8 @@ export const mockAccounts: UserAccount[] = [
         backgroundColor: ACCOUNTS_COLORS['3'],
         primary: true,
         visible: true,
-      }
-    ]
+      },
+    ],
   },
 ];
 
@@ -152,7 +152,7 @@ export const mockEvents: CalendarEvent[] = [
     accountId: '1',
     accountColor: '#0B8043', // Green for holidays
   },
-  
+
   // Tomorrow's events
   {
     id: 'event-4',
@@ -173,7 +173,7 @@ export const mockEvents: CalendarEvent[] = [
     accountId: '2',
     accountColor: ACCOUNTS_COLORS['2'],
   },
-  
+
   // Day after tomorrow
   {
     id: 'event-6',
@@ -194,7 +194,7 @@ export const mockEvents: CalendarEvent[] = [
     accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
-  
+
   // Next week - all day event
   {
     id: 'event-8',
@@ -218,9 +218,9 @@ export const mockEvents: CalendarEvent[] = [
 ];
 
 // Filtered event sets for different scenarios
-export const allDayEvents = mockEvents.filter(e => !e.start.dateTime);
-export const timedEvents = mockEvents.filter(e => e.start.dateTime);
-export const todayEvents = mockEvents.filter(e => {
+export const allDayEvents = mockEvents.filter((e) => !e.start.dateTime);
+export const timedEvents = mockEvents.filter((e) => e.start.dateTime);
+export const todayEvents = mockEvents.filter((e) => {
   const eventDate = new Date(e.start.dateTime || e.start.date!);
   const today = new Date();
   return eventDate.toDateString() === today.toDateString();

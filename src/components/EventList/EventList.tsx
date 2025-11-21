@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { CalendarService } from '../../services/CalendarService';
 import type { CalendarEvent } from '../../services/CalendarService';
 import { useAuthStore } from '../../store/useAuthStore';
-import { format } from 'date-fns';
-import { uk } from 'date-fns/locale'; // Ukrainian locale for the screenshot match
+import { Formatter } from '../../utils/Formatter';
 import styles from './EventList.module.scss';
+import { EventsGroup } from './EventsGroup';
+
+const ID_SCROLL_THRESHOLD = 'scroll-sentinel';
 
 export const EventList = () => {
   const { accounts } = useAuthStore();
@@ -52,10 +54,10 @@ export const EventList = () => {
           loadMore();
         }
       },
-      { threshold: 0.1 } // Trigger when 10% of the sentinel is visible
+      { threshold: 0.1 }, // Trigger when 10% of the sentinel is visible
     );
 
-    const sentinel = document.getElementById('scroll-sentinel');
+    const sentinel = document.getElementById(ID_SCROLL_THRESHOLD);
     if (sentinel) {
       observer.observe(sentinel);
     }
@@ -69,15 +71,15 @@ export const EventList = () => {
       const newEvents = await CalendarService.loadMoreEvents(accounts, currentRangeEnd);
 
       if (newEvents.length > 0) {
-        setEvents(prev => {
+        setEvents((prev) => {
           // Filter out duplicates just in case
-          const existingIds = new Set(prev.map(e => e.id));
-          const uniqueNewEvents = newEvents.filter(e => !existingIds.has(e.id));
+          const existingIds = new Set(prev.map((e) => e.id));
+          const uniqueNewEvents = newEvents.filter((e) => !existingIds.has(e.id));
           return [...prev, ...uniqueNewEvents];
         });
 
         // Update range end
-        setCurrentRangeEnd(prev => {
+        setCurrentRangeEnd((prev) => {
           const next = new Date(prev);
           next.setDate(next.getDate() + 14);
           return next;
@@ -91,7 +93,7 @@ export const EventList = () => {
   };
 
   const openEvent = (event: CalendarEvent) => {
-    const account = accounts.find(a => a.id === event.accountId);
+    const account = accounts.find((a) => a.id === event.accountId);
     let url = event.htmlLink;
 
     if (account?.email) {
@@ -111,102 +113,60 @@ export const EventList = () => {
   };
 
   // Group events by date
-  const groupedEvents = events.reduce((groups, event) => {
-    const dateStr = event.start.dateTime || event.start.date;
-    if (!dateStr) return groups;
+  const groupedEvents = events.reduce(
+    (groups, event) => {
+      const dateStr = event.start.dateTime || event.start.date;
+      if (!dateStr) return groups;
 
-    // Use the safe parser to get the date object
-    const dateObj = parseDate(dateStr);
-    const dateKey = format(dateObj, 'yyyy-MM-dd');
+      // Use the safe parser to get the date object
+      const dateObj = parseDate(dateStr);
+      const dateKey = Formatter.dateFormat(dateObj, Formatter.DATE_FORMAT.YYYY_MM_DD);
 
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(event);
-    return groups;
-  }, {} as Record<string, CalendarEvent[]>);
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(event);
+      return groups;
+    },
+    {} as Record<string, CalendarEvent[]>,
+  );
 
   const sortedDates = Object.keys(groupedEvents).sort();
-  const todayKey = format(new Date(), 'yyyy-MM-dd');
+  const todayKey = Formatter.dateFormat(new Date(), Formatter.DATE_FORMAT.YYYY_MM_DD);
   const todayEvents = groupedEvents[todayKey] || [];
-  const futureDates = sortedDates.filter(date => date > todayKey);
-
-  console.log('Grouped Events:', groupedEvents);
+  const futureDates = sortedDates.filter((date) => date > todayKey);
 
   if (loading) return <div className={styles.loading}>Loading events...</div>;
   if (error) return <div className={styles.error}>{error}</div>;
-  if (events.length === 0 && accounts.length > 0) return <div className={styles.emptyState}>No upcoming events found.</div>;
+  if (events.length === 0 && accounts.length > 0)
+    return <div className={styles.emptyState}>No upcoming events found.</div>;
   if (accounts.length === 0) return <div className={styles.emptyState}>Please add an account to see events.</div>;
-
-  const renderEvent = (event: CalendarEvent) => {
-    const isAllDay = !event.start.dateTime;
-    const startTime = event.start.dateTime ? format(new Date(event.start.dateTime), 'HH:mm') : '';
-    const endTime = event.end.dateTime ? format(new Date(event.end.dateTime), 'HH:mm') : '';
-
-    // Check if event is done (end time is in the past)
-    // For all-day events, they are done if the day is passed, but here we are rendering them in their respective day group.
-    // So for "Today", an all-day event is not done.
-    const isDone = event.end.dateTime ? new Date(event.end.dateTime) < new Date() : false;
-
-    return (
-      <div
-        key={event.id}
-        className={`${styles.eventCard} ${isDone ? styles.isDone : ''}`}
-        onClick={() => openEvent(event)}
-      >
-        <div
-          className={`${styles.timeBlock} ${isAllDay ? styles.allDay : styles.hasTime}`}
-          style={{ backgroundColor: event.accountColor || undefined }}
-        >
-          {!isAllDay && (
-            <>
-              <span>{startTime}</span>
-              <span>{endTime}</span>
-            </>
-          )}
-        </div>
-        <div className={styles.eventInfo}>
-          <span className={styles.eventTitle}>{event.summary}</span>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className={styles.eventList}>
       {todayEvents.length > 0 && (
         <>
           <div className={styles.sectionHeader}>Today</div>
-          <div className={styles.dateGroup}>
-            <div className={styles.dateHeader}>{format(new Date(), 'EEEE, MMMM d', { locale: uk })}</div>
-            {todayEvents.map(renderEvent)}
-          </div>
+          <EventsGroup date={new Date()} events={todayEvents} onEventClick={openEvent} />
         </>
       )}
 
       {futureDates.length > 0 && (
         <>
           <div className={styles.sectionHeader}>Next</div>
-          {futureDates.map(dateKey => {
+          {futureDates.map((dateKey) => {
             const dateEvents = groupedEvents[dateKey];
             // Parse dateKey (yyyy-MM-dd) safely
             const [y, m, d] = dateKey.split('-').map(Number);
             const dateObj = new Date(y, m - 1, d);
 
-            const dateLabel = format(dateObj, 'EEEE, MMMM d', { locale: uk });
-
-            return (
-              <div key={dateKey} className={styles.dateGroup}>
-                <div className={styles.dateHeader}>{dateLabel}</div>
-                {dateEvents.map(renderEvent)}
-              </div>
-            );
+            return <EventsGroup key={dateKey} date={dateObj} events={dateEvents} onEventClick={openEvent} />;
           })}
         </>
       )}
 
       {/* Sentinel element for IntersectionObserver */}
-      <div id="scroll-sentinel" style={{ height: '20px', margin: '10px 0' }}>
+      <div id={ID_SCROLL_THRESHOLD} style={{ height: '20px', margin: '10px 0' }}>
         {loadingMore && <div className={styles.loadingMore}>Loading more events...</div>}
       </div>
     </div>

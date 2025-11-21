@@ -8,18 +8,18 @@ const preview: Preview = {
   parameters: {
     controls: {
       matchers: {
-       color: /(background|color)$/i,
-       date: /Date$/i,
+        color: /(background|color)$/i,
+        date: /Date$/i,
       },
     },
   },
   decorators: [
     (Story) => (
-      <div className='storybook-decorator' style={{ width: '100%' }}>
+      <div className="storybook-decorator" style={{ width: '100%' }}>
         <Story />
       </div>
     ),
-  ]
+  ],
 };
 
 export default preview;

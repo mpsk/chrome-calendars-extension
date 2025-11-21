@@ -1,4 +1,6 @@
+import { useAuthStore } from '../store/useAuthStore';
 import type { CalendarConfig, UserAccount } from '../types/auth';
+import { AuthService } from './AuthService';
 
 export interface CalendarEvent {
   id: string;
@@ -18,7 +20,7 @@ export class CalendarService {
 
     if (account.calendars && account.calendars.length > 0) {
       // Use stored calendars if available, filtering by visibility
-      calendars = account.calendars.filter(c => c.visible);
+      calendars = account.calendars.filter((c) => c.visible);
     } else {
       // Fallback to fetching if no calendars stored (legacy behavior or first load)
       const calendarListUrl = 'https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader';
@@ -31,9 +33,6 @@ export class CalendarService {
         console.log(`Token expired for ${account.email}, attempting silent refresh...`);
         try {
           // 1. Refresh the token
-          const { AuthService } = await import('./AuthService');
-          const { useAuthStore } = await import('../store/useAuthStore');
-
           const newAccount = await AuthService.refreshToken(account.email);
 
           // 2. Update the store
@@ -46,7 +45,6 @@ export class CalendarService {
 
           // Update local account variable for subsequent requests in this function
           account = newAccount;
-
         } catch (refreshError) {
           console.error('Silent refresh failed:', refreshError);
           throw new Error(`Session expired for ${account.email}. Please remove and add the account again.`);
@@ -54,12 +52,14 @@ export class CalendarService {
       }
 
       if (!listResponse.ok) {
-        throw new Error(`Failed to fetch calendar list for ${account.email} (${listResponse.status} ${listResponse.statusText})`);
+        throw new Error(
+          `Failed to fetch calendar list for ${account.email} (${listResponse.status} ${listResponse.statusText})`,
+        );
       }
 
       const listData = await listResponse.json();
 
-      console.log('--- listData', { 'account.email': account.email, listData })
+      console.log('--- listData', { 'account.email': account.email, listData });
       calendars = listData.items.filter((cal: any) => cal.selected);
 
       // Ensure 'primary' is always included if it wasn't selected
@@ -96,7 +96,7 @@ export class CalendarService {
 
     const results = await Promise.all(eventPromises);
 
-    console.log('=== Promise.all(eventPromises)', { calendars, results })
+    console.log('=== Promise.all(eventPromises)', { calendars, results });
     return results.flat();
   }
 
@@ -141,16 +141,20 @@ export class CalendarService {
     return this.fetchEventsForRange(accounts, startDate.toISOString(), endDate.toISOString());
   }
 
-  private static async fetchEventsForRange(accounts: UserAccount[], timeMin: string, timeMax: string): Promise<CalendarEvent[]> {
+  private static async fetchEventsForRange(
+    accounts: UserAccount[],
+    timeMin: string,
+    timeMax: string,
+  ): Promise<CalendarEvent[]> {
     try {
-      const promises = accounts.map(account => this.getEvents(account, timeMin, timeMax));
+      const promises = accounts.map((account) => this.getEvents(account, timeMin, timeMax));
       const results = await Promise.allSettled(promises);
       const events: CalendarEvent[] = [];
       const errors: string[] = [];
 
-      console.log('=== fetchEventsForRange:results', results)
+      console.log('=== fetchEventsForRange:results', results);
 
-      results.forEach(result => {
+      results.forEach((result) => {
         if (result.status === 'fulfilled') {
           events.push(...result.value);
         } else {

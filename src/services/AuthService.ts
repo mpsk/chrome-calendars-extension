@@ -13,14 +13,14 @@ const AUTH_URL = `https://accounts.google.com/o/oauth2/auth`;
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile'
+  'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
 export class AuthService {
   static async refreshToken(email: string): Promise<UserAccount> {
     const authToken = await this.launchAuthFlow(false, email);
 
-    // We don't strictly need to fetch user info again if we trust the email match, 
+    // We don't strictly need to fetch user info again if we trust the email match,
     // but it's good practice to verify the token belongs to the user we expect.
     const userInfo = await this.fetchUserInfo(authToken.token);
 
@@ -79,7 +79,7 @@ export class AuthService {
           const token = params.get('access_token');
           const expiresIn = params.get('expires_in');
 
-          console.log('=== launchWebAuthFlow', { expiresIn })
+          console.log('=== launchWebAuthFlow', { expiresIn });
 
           if (!token) {
             reject(new Error('No token found'));
@@ -92,7 +92,7 @@ export class AuthService {
           };
 
           resolve(authToken);
-        }
+        },
       );
     });
   }

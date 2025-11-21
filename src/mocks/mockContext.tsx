@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
-import { CalendarService } from '../services/CalendarService';
 import { mockAccounts, mockEvents } from '../mocks/mockData';
+import { CalendarService } from '../services/CalendarService';
+import { useAuthStore } from '../store/useAuthStore';
 import type { AuthState } from '../store/useAuthStore';
 
 export const mockChromeApi = () => {
@@ -10,8 +10,8 @@ export const mockChromeApi = () => {
     storage: {
       local: {
         get: async () => ({}),
-        set: async () => { },
-        remove: async () => { },
+        set: async () => {},
+        remove: async () => {},
       },
     },
     runtime: {
@@ -22,7 +22,7 @@ export const mockChromeApi = () => {
   if (typeof window !== 'undefined' && !(window as any).chrome) {
     (window as any).chrome = mockChrome;
   }
-}
+};
 
 export interface MockAppContextProps extends AuthState {
   events: typeof mockEvents;
@@ -37,7 +37,6 @@ export const useMockAppContext = ({
   removeAccount = () => Promise.resolve(),
 }: Partial<MockAppContextProps>) => {
   useEffect(() => {
-
     mockChromeApi();
 
     // Reset store
@@ -46,7 +45,7 @@ export const useMockAppContext = ({
       isLoading: isLoading,
       error: error,
       addAccount,
-      removeAccount
+      removeAccount,
     });
 
     // Mock CalendarService
@@ -66,4 +65,3 @@ export const useMockAppContext = ({
     };
   }, [isLoading, accounts, error, events, addAccount, removeAccount]);
 };
-

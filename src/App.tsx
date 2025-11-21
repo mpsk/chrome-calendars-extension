@@ -3,9 +3,8 @@ import styles from './App.module.scss';
 import { AccountManager } from './components/AccountManager';
 import { EventList } from './components/EventList';
 import { Header } from './components/Header/Header';
-import { useAuthStore } from './store/useAuthStore';
-
 import { CalendarService } from './services/CalendarService';
+import { useAuthStore } from './store/useAuthStore';
 
 export function App() {
   const { init, refreshAccounts } = useAuthStore();
@@ -23,19 +22,9 @@ export function App() {
 
   return (
     <div className={styles.appContainer}>
-      <Header
-        onRefresh={handleRefresh}
-        currentView={currentView}
-        onViewChange={setCurrentView}
-      />
+      <Header onRefresh={handleRefresh} currentView={currentView} onViewChange={setCurrentView} />
 
-      <div className={styles.contentArea}>
-        {currentView === 'events' ? (
-          <EventList />
-        ) : (
-          <AccountManager />
-        )}
-      </div>
+      <div className={styles.contentArea}>{currentView === 'events' ? <EventList /> : <AccountManager />}</div>
     </div>
   );
 }
