@@ -19,20 +19,20 @@ export const createMockAuthStore = (initialState?: Partial<AuthState>) => {
     accounts: initialState?.accounts || [],
     isLoading: initialState?.isLoading || false,
     error: initialState?.error || null,
-    
+
     init: async () => {
       console.log('[Mock Store] init called');
     },
-    
+
     addAccount: async (account?: UserAccount) => {
       console.log('[Mock Store] addAccount called', account);
       set({ isLoading: true, error: null });
-      
+
       // Simulate async operation
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       if (account) {
-        set(state => ({
+        set((state) => ({
           accounts: [...state.accounts, account],
           isLoading: false,
         }));
@@ -40,11 +40,11 @@ export const createMockAuthStore = (initialState?: Partial<AuthState>) => {
         set({ isLoading: false });
       }
     },
-    
+
     removeAccount: async (accountId: string) => {
       console.log('[Mock Store] removeAccount called', accountId);
-      set(state => ({
-        accounts: state.accounts.filter(a => a.id !== accountId),
+      set((state) => ({
+        accounts: state.accounts.filter((a) => a.id !== accountId),
       }));
     },
   }));

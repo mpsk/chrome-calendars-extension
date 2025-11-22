@@ -1,16 +1,42 @@
 import { CalendarService } from '../services/CalendarService';
+import { StorageService } from '../services/StorageService';
 import type { UserAccount } from '../types/auth';
 
-console.log("Background service worker started");
+// Set up token refresh callback for background context
+CalendarService.addTokenRefreshListener(async (account: UserAccount) => {
+  const accounts = await StorageService.getAccounts();
+  const existingIndex = accounts.findIndex((a) => a.id === account.id);
+  if (existingIndex >= 0) {
+    accounts[existingIndex] = account;
+    await StorageService.saveAccounts(accounts);
+  }
+});
+
+console.log('Background service worker started');
 
 // Create alarm if not exists
 // Create or update alarm
-chrome.alarms.create("refresh", { periodInMinutes: 1 });
+chrome.alarms.create('refresh', { periodInMinutes: 15 });
 
-async function updateBadge(forceRefresh = false) {
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'refresh') {
+    updateBadge(); // Use cached data, let CalendarService handle expiration
+  }
+});
+
+// Listen for storage changes (e.g. account added)
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.accounts) {
+    updateBadge();
+  }
+});
+
+// Update on startup
+updateBadge();
+
+async function updateBadge() {
   try {
-    const result = await chrome.storage.local.get('accounts');
-    const accounts = (result.accounts as UserAccount[]) || [];
+    const accounts = await StorageService.getAccounts();
 
     if (accounts.length === 0) {
       chrome.action.setBadgeText({ text: '' });
@@ -18,15 +44,15 @@ async function updateBadge(forceRefresh = false) {
     }
 
     // Use loadInitialEvents with forceRefresh option
-    const events = await CalendarService.loadInitialEvents(accounts, forceRefresh);
-    
+    const events = await CalendarService.loadInitialEvents(accounts);
+
     const now = Date.now();
-    
+
     // Filter for primary events only
-    const primaryEvents = events.filter(e => e.isPrimary);
+    const primaryEvents = events.filter((e) => e.isPrimary);
 
     // Check for ongoing events (timed only)
-    const ongoingEvent = primaryEvents.find(e => {
+    const ongoingEvent = primaryEvents.find((e) => {
       if (!e.start.dateTime || !e.end.dateTime) return false; // Skip all-day events
       const start = new Date(e.start.dateTime).getTime();
       const end = new Date(e.end.dateTime).getTime();
@@ -38,20 +64,20 @@ async function updateBadge(forceRefresh = false) {
       chrome.action.setBadgeBackgroundColor({ color: '#d93025' }); // Red
       return;
     }
-    
+
     // Find the next upcoming event
     const nextEvent = primaryEvents
-      .map(e => ({
+      .map((e) => ({
         ...e,
-        startTime: new Date(e.start.dateTime || e.start.date || 0).getTime()
+        startTime: new Date(e.start.dateTime || e.start.date || 0).getTime(),
       }))
-      .filter(e => e.startTime > now)
+      .filter((e) => e.startTime > now)
       .sort((a, b) => a.startTime - b.startTime)[0];
 
     if (nextEvent) {
       const diffMs = nextEvent.startTime - now;
       const diffMins = Math.ceil(diffMs / (1000 * 60));
-      
+
       let text = '';
       if (diffMins < 60) {
         text = `${diffMins}m`;
@@ -62,9 +88,9 @@ async function updateBadge(forceRefresh = false) {
         const days = Math.round(diffMins / (60 * 24));
         text = `${days}d`;
       }
-      
+
       chrome.action.setBadgeText({ text });
-      
+
       // Use calendar color
       if (nextEvent.accountColor) {
         chrome.action.setBadgeBackgroundColor({ color: nextEvent.accountColor });
@@ -74,24 +100,7 @@ async function updateBadge(forceRefresh = false) {
     } else {
       chrome.action.setBadgeText({ text: '' });
     }
-
   } catch (error) {
     console.error('Error updating badge:', error);
   }
 }
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "refresh") {
-    updateBadge(false); // Use cached data, let CalendarService handle expiration
-  }
-});
-
-// Update on startup
-updateBadge(false);
-
-// Listen for storage changes (e.g. account added)
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.accounts) {
-    updateBadge();
-  }
-});

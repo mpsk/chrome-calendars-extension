@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { type MockAppContextProps, useMockAppContext } from '../../mocks/mockContext';
 import { mockAccounts } from '../../mocks/mockData';
 import type { UserAccount } from '../../types/auth';
-import { useMockAppContext, type MockAppContextProps } from '../../mocks/mockContext';
 import { AccountManager } from './AccountManager';
 
 // Pure presentational component for Storybook
@@ -15,11 +15,11 @@ const AccountManagerPresentation = ({
   accounts: UserAccount[];
   isLoading: boolean;
   error: string | null;
-  onAddAccount: MockAppContextProps['addAccount']
+  onAddAccount: MockAppContextProps['addAccount'];
   onRemoveAccount: MockAppContextProps['removeAccount'];
 }) => {
   useMockAppContext({ accounts, isLoading, error, addAccount: onAddAccount, removeAccount: onRemoveAccount });
-  return <AccountManager />
+  return <AccountManager />;
 };
 
 const meta: Meta<typeof AccountManagerPresentation> = {

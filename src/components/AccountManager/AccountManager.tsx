@@ -10,19 +10,17 @@ export const AccountManager = () => {
     <div className={styles.accountManager}>
       <div className={styles.accountHeader}>
         <h2>Accounts</h2>
-        <AddAccountBtn className={styles.btnIcon}/>
+        <AddAccountBtn className={styles.btnIcon} />
       </div>
-      
+
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       <div className={styles.accountList}>
-        {accounts.map(account => (
+        {accounts.map((account) => (
           <AccountItem key={account.id} account={account} />
         ))}
         {accounts.length === 0 && !isLoading && (
-          <div className={styles.emptyState}>
-            No accounts connected. Click + to add one.
-          </div>
+          <div className={styles.emptyState}>No accounts connected. Click + to add one.</div>
         )}
       </div>
     </div>

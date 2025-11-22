@@ -1,0 +1,17 @@
+.eventsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eventsDateHeader {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  padding-left: 4px;
+  text-transform: lowercase;
+
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}

@@ -1,11 +1,10 @@
-import type { UserAccount } from '../types/auth';
-import type { CalendarEvent } from '../services/CalendarService';
+import type { CalendarEvent, UserAccount } from '../types/auth';
 
 const ACCOUNTS_COLORS = {
   '1': '#039BE5',
   '2': '#3ad942ff',
   '3': '#d9be3aff',
-}
+};
 
 // Mock user accounts
 export const mockAccounts: UserAccount[] = [
@@ -24,6 +23,7 @@ export const mockAccounts: UserAccount[] = [
         summary: 'John Doe',
         backgroundColor: ACCOUNTS_COLORS['1'],
         primary: true,
+        selected: true,
         visible: true,
       },
       {
@@ -31,6 +31,7 @@ export const mockAccounts: UserAccount[] = [
         summary: 'Holidays in Ukraine',
         backgroundColor: '#0B8043',
         primary: false,
+        selected: true,
         visible: true,
       },
       {
@@ -38,9 +39,10 @@ export const mockAccounts: UserAccount[] = [
         summary: 'Birthdays',
         backgroundColor: '#F4511E',
         primary: false,
+        selected: true,
         visible: true,
-      }
-    ]
+      },
+    ],
   },
   {
     id: '2',
@@ -57,6 +59,7 @@ export const mockAccounts: UserAccount[] = [
         summary: 'Jane Smith',
         backgroundColor: ACCOUNTS_COLORS['2'],
         primary: true,
+        selected: true,
         visible: true,
       },
       {
@@ -64,9 +67,10 @@ export const mockAccounts: UserAccount[] = [
         summary: 'Work Projects',
         backgroundColor: '#8E24AA',
         primary: false,
+        selected: true,
         visible: true,
-      }
-    ]
+      },
+    ],
   },
   {
     id: '3',
@@ -83,9 +87,10 @@ export const mockAccounts: UserAccount[] = [
         summary: 'Alex Johnson',
         backgroundColor: ACCOUNTS_COLORS['3'],
         primary: true,
+        selected: true,
         visible: true,
-      }
-    ]
+      },
+    ],
   },
 ];
 
@@ -112,6 +117,7 @@ export const mockEvents: CalendarEvent[] = [
     htmlLink: 'https://calendar.google.com/event?eid=event-1',
     accountId: '1',
     accountColor: '#039BE5',
+    status: 'confirmed',
     isPrimary: true,
   },
   {
@@ -121,6 +127,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(0, 15, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-2',
     accountId: '1',
+    status: 'confirmed',
     accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
@@ -131,6 +138,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(0, 19, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-3',
     accountId: '2',
+    status: 'confirmed',
     accountColor: ACCOUNTS_COLORS['2'],
     isPrimary: true,
   },
@@ -141,6 +149,8 @@ export const mockEvents: CalendarEvent[] = [
     end: { date: createDate(1).toISOString().split('T')[0] },
     htmlLink: 'https://calendar.google.com/event?eid=event-3',
     accountId: '2',
+    status: 'confirmed',
+    isPrimary: false,
     accountColor: ACCOUNTS_COLORS['2'],
   },
   {
@@ -150,9 +160,11 @@ export const mockEvents: CalendarEvent[] = [
     end: { date: createDate(1).toISOString().split('T')[0] },
     htmlLink: 'https://calendar.google.com/event?eid=event-holiday-1',
     accountId: '1',
+    status: 'confirmed',
+    isPrimary: false,
     accountColor: '#0B8043', // Green for holidays
   },
-  
+
   // Tomorrow's events
   {
     id: 'event-4',
@@ -161,6 +173,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(1, 11, 30).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-4',
     accountId: '1',
+    status: 'confirmed',
     accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
@@ -171,9 +184,11 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(1, 13, 30).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-5',
     accountId: '2',
+    status: 'confirmed',
+    isPrimary: false,
     accountColor: ACCOUNTS_COLORS['2'],
   },
-  
+
   // Day after tomorrow
   {
     id: 'event-6',
@@ -182,6 +197,8 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(2, 16, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-6',
     accountId: '3',
+    status: 'confirmed',
+    isPrimary: false,
     accountColor: ACCOUNTS_COLORS['3'],
   },
   {
@@ -191,10 +208,11 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(2, 19, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-7',
     accountId: '1',
+    status: 'confirmed',
     accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
-  
+
   // Next week - all day event
   {
     id: 'event-8',
@@ -203,6 +221,7 @@ export const mockEvents: CalendarEvent[] = [
     end: { date: createDate(9).toISOString().split('T')[0] },
     htmlLink: 'https://calendar.google.com/event?eid=event-8',
     accountId: '1',
+    status: 'confirmed',
     accountColor: ACCOUNTS_COLORS['1'],
     isPrimary: true,
   },
@@ -213,14 +232,16 @@ export const mockEvents: CalendarEvent[] = [
     end: { dateTime: createDate(8, 17, 0).toISOString() },
     htmlLink: 'https://calendar.google.com/event?eid=event-9',
     accountId: '2',
+    status: 'confirmed',
+    isPrimary: false,
     accountColor: ACCOUNTS_COLORS['2'],
   },
 ];
 
 // Filtered event sets for different scenarios
-export const allDayEvents = mockEvents.filter(e => !e.start.dateTime);
-export const timedEvents = mockEvents.filter(e => e.start.dateTime);
-export const todayEvents = mockEvents.filter(e => {
+export const allDayEvents = mockEvents.filter((e) => !e.start.dateTime);
+export const timedEvents = mockEvents.filter((e) => e.start.dateTime);
+export const todayEvents = mockEvents.filter((e) => {
   const eventDate = new Date(e.start.dateTime || e.start.date!);
   const today = new Date();
   return eventDate.toDateString() === today.toDateString();

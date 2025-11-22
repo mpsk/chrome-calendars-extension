@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { App } from './App';
-import { mockAccounts, mockEvents } from './mocks/mockData';
 import { useMockAppContext } from './mocks/mockContext';
+import { mockAccounts, mockEvents } from './mocks/mockData';
 
 // Wrapper to setup mocks
-const MockApp = ({ 
-  isLoading = false, 
+const MockApp = ({
+  isLoading = false,
   accounts = mockAccounts,
   error = null as string | null,
-  events = mockEvents 
+  events = mockEvents,
 }) => {
   useMockAppContext({ isLoading, accounts, error, events });
   return <App />;

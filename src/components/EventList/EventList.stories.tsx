@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { Decorator } from '@storybook/react';
-import { mockEvents, allDayEvents, timedEvents, mockAccounts } from '../../mocks/mockData';
-import type { CalendarEvent } from '../../services/CalendarService';
-import type { UserAccount } from '../../types/auth';
-import { useAuthStore } from '../../store/useAuthStore';
-import { CalendarService } from '../../services/CalendarService';
 import { mockChromeApi } from '../../mocks/mockContext';
+import { allDayEvents, mockAccounts, mockEvents, timedEvents } from '../../mocks/mockData';
+import { CalendarService } from '../../services/CalendarService';
+import { useAuthStore } from '../../store/useAuthStore';
+import type { CalendarEvent, UserAccount } from '../../types/auth';
 import { EventList } from './EventList';
 
 // Decorator to set up mocks before rendering
@@ -13,7 +12,7 @@ const withMocks = (
   accounts: UserAccount[] = mockAccounts,
   events: CalendarEvent[] = mockEvents,
   isLoading: boolean = false,
-  error: string | null = null
+  error: string | null = null,
 ): Decorator => {
   return (Story) => {
     // Set up mocks synchronously before rendering
