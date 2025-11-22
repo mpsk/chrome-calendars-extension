@@ -1,16 +1,6 @@
-import type { CalendarConfig, UserAccount } from '../types/auth';
+import type { CalendarConfig, CalendarEvent, CalendarEventRaw, UserAccount } from '../types/auth';
 import { AuthService } from './AuthService';
-
-export interface CalendarEvent {
-  id: string;
-  summary: string;
-  start: { dateTime?: string; date?: string };
-  end: { dateTime?: string; date?: string };
-  htmlLink: string;
-  accountId: string; // To know which account it belongs to
-  accountColor?: string; // Optional color for UI
-  isPrimary?: boolean; // True if from the primary calendar
-}
+import { StorageService } from './StorageService';
 
 const BASE_URL = 'https://www.googleapis.com/calendar/v3';
 
@@ -27,6 +17,7 @@ const CALENDAR_API_V3 = {
 };
 
 export class CalendarService {
+  private static cachedPromises = new Map<string, Promise<CalendarEvent[]>>();
   private static tokenRefreshListeners = new Map<(account: UserAccount) => void, (account: UserAccount) => void>();
 
   static addTokenRefreshListener(listener: (account: UserAccount) => void) {
@@ -37,7 +28,20 @@ export class CalendarService {
     };
   }
 
-  static async getEvents(account: UserAccount, timeMin: Date, timeMax: Date): Promise<CalendarEvent[]> {
+  static async loadInitialEvents(accounts: UserAccount[]): Promise<CalendarEvent[]> {
+    const now = new Date();
+    const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const events = await this.fetchEventsForRange(accounts, now, twoWeeksLater);
+    await StorageService.saveInitialEvents(events);
+    return events;
+  }
+
+  static async loadMoreEvents(accounts: UserAccount[], startDate: Date): Promise<CalendarEvent[]> {
+    const endDate = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    return this.fetchEventsForRange(accounts, startDate, endDate);
+  }
+
+  private static async getEvents(account: UserAccount, timeMin: Date, timeMax: Date): Promise<CalendarEvent[]> {
     // 1. Fetch list of calendars (or use stored ones)
     let calendars: CalendarConfig[] = [];
 
@@ -46,45 +50,25 @@ export class CalendarService {
       calendars = account.calendars.filter((c) => c.visible);
     } else {
       // Fallback to fetching if no calendars stored (legacy behavior or first load)
-      let listResponse = await fetch(CALENDAR_API_V3.userCalendarList, {
-        headers: { Authorization: `Bearer ${account.token.token}` },
-      });
+      const { response, account: updatedAccount } = await this.fetchWithAuthRetry(
+        CALENDAR_API_V3.userCalendarList,
+        {},
+        account,
+      );
+      account = updatedAccount;
 
-      // Handle 401 (Unauthorized) - Attempt Refresh
-      if (listResponse.status === 401) {
-        console.log(`Token expired for ${account.email}, attempting silent refresh...`);
-        try {
-          // 1. Refresh the token
-          const newAccount = await AuthService.refreshToken(account.email);
-
-          // 2. Update the store via listeners
-          this.tokenRefreshListeners.forEach((listener) => listener(newAccount));
-
-          // 3. Retry the request with new token
-          listResponse = await fetch(CALENDAR_API_V3.userCalendarList, {
-            headers: { Authorization: `Bearer ${newAccount.token.token}` },
-          });
-
-          // Update local account variable for subsequent requests in this function
-          account = newAccount;
-        } catch (refreshError) {
-          console.error('Silent refresh failed:', refreshError);
-          throw new Error(`Session expired for ${account.email}`);
-        }
-      }
-
-      if (!listResponse.ok) {
+      if (!response.ok) {
         throw new Error(
-          `Failed to fetch calendar list for ${account.email} (${listResponse.status} ${listResponse.statusText})`,
+          `Failed to fetch calendar list for ${account.email} (${response.status} ${response.statusText})`,
         );
       }
 
-      const listData = await listResponse.json();
+      const listData = await response.json();
       calendars = listData.items.filter((cal: any) => cal.selected);
 
       // Ensure 'primary' is always included if it wasn't selected
       const primaryCal = listData.items.find((cal: any) => cal.primary);
-      if (primaryCal && !calendars.find((c: any) => c.id === primaryCal.id)) {
+      if (primaryCal && !calendars.find((c) => c.id === primaryCal.id)) {
         calendars.push(primaryCal);
       }
     }
@@ -98,14 +82,10 @@ export class CalendarService {
   }
 
   static async getUserCalendars(account: UserAccount): Promise<CalendarConfig[]> {
-    const response = await fetch(CALENDAR_API_V3.userCalendarList, {
-      headers: { Authorization: `Bearer ${account.token.token}` },
-    });
+    const { response } = await this.fetchWithAuthRetry(CALENDAR_API_V3.userCalendarList, {}, account);
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Let the caller handle refresh or just fail for now, as this is usually called during addAccount where we have a fresh token,
-        // or we can implement retry logic here too. For simplicity, let's throw.
         throw new Error('Unauthorized');
       }
       throw new Error(`Failed to fetch calendars: ${response.statusText}`);
@@ -124,19 +104,6 @@ export class CalendarService {
     return googleCalendars;
   }
 
-  static async loadInitialEvents(accounts: UserAccount[], forceRefresh = false): Promise<CalendarEvent[]> {
-    const now = new Date();
-    const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-    const events = await this.fetchEventsForRange(accounts, now, twoWeeksLater);
-    return events;
-  }
-
-  static async loadMoreEvents(accounts: UserAccount[], startDate: Date): Promise<CalendarEvent[]> {
-    const endDate = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
-    return this.fetchEventsForRange(accounts, startDate, endDate);
-  }
-
   private static async fetchAccountCalendarEvents(params: {
     account: UserAccount;
     calendar: CalendarConfig;
@@ -145,56 +112,51 @@ export class CalendarService {
   }): Promise<CalendarEvent[]> {
     const { account, calendar, timeMax, timeMin } = params;
     try {
-      // const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
       const url = CALENDAR_API_V3.calendarEvents({ calendar, timeMax, timeMin });
-
-      let response = await fetch(url, {
-        headers: { Authorization: `Bearer ${account.token.token}` },
-      });
-
-      if (response.status === 401) {
-        console.log(`Token expired for ${account.email} during event fetch, attempting silent refresh...`);
-        try {
-          // 1. Refresh the token
-          const newAccount = await AuthService.refreshToken(account.email);
-
-          // 2. Update the store via listeners
-          this.tokenRefreshListeners.forEach((listener) => listener(newAccount));
-
-          // 3. Retry the request with new token
-          response = await fetch(url, {
-            headers: { Authorization: `Bearer ${newAccount.token.token}` },
-          });
-
-          // Update local account variable (though not strictly needed for this scope as we used newAccount for fetch)
-          // account = newAccount;
-        } catch (refreshError) {
-          console.error('Silent refresh failed during event fetch:', refreshError);
-          // Don't throw here to avoid breaking Promise.all for other calendars, just return empty
-          return [];
-        }
-      }
+      const { response, account: updatedAccount } = await this.fetchWithAuthRetry(url, {}, account);
 
       if (!response.ok) {
         console.error(`Failed to fetch events for ${calendar.summary}:`, response.statusText);
         return [];
       }
-      const data = await response.json();
+      const data = (await response.json()) as { items: CalendarEventRaw[] };
 
-      return data.items.map((item: CalendarEvent) => ({
-        id: item.id,
-        summary: item.summary,
-        start: item.start,
-        end: item.end,
-        htmlLink: item.htmlLink,
-        accountId: account.id,
-        accountColor: calendar.backgroundColor, // Use calendar color
-        isPrimary: !!calendar.primary, // Set isPrimary flag
-      }));
+      return data.items.map((item) => mapToCalendarEvent(item, updatedAccount.id, calendar));
     } catch (err) {
       console.error('=== fetchAccountCalendarEvents: error', err);
       return [];
     }
+  }
+
+  private static async fetchWithAuthRetry(
+    url: string,
+    init: RequestInit,
+    account: UserAccount,
+  ): Promise<{ response: Response; account: UserAccount }> {
+    const headers = { ...init.headers, Authorization: `Bearer ${account.token.token}` };
+    let response = await fetch(url, { ...init, headers });
+
+    if (response.status === 401) {
+      console.log(`Token expired for ${account.email}, attempting silent refresh...`);
+      try {
+        // 1. Refresh the token
+        const newAccount = await AuthService.refreshToken(account.email);
+
+        // 2. Update the store via listeners
+        this.tokenRefreshListeners.forEach((listener) => listener(newAccount));
+
+        // 3. Retry the request with new token
+        const newHeaders = { ...init.headers, Authorization: `Bearer ${newAccount.token.token}` };
+        response = await fetch(url, { ...init, headers: newHeaders });
+
+        return { response, account: newAccount };
+      } catch (refreshError) {
+        console.error('Silent refresh failed:', refreshError);
+        throw new Error(`Session expired for ${account.email}`);
+      }
+    }
+
+    return { response, account };
   }
 
   private static async fetchEventsForRange(
@@ -233,9 +195,18 @@ export class CalendarService {
       return [];
     }
   }
+}
 
-  // Deprecated but kept for compatibility if needed, redirecting to new logic
-  static async getAllUpcomingEvents(accounts: UserAccount[]): Promise<CalendarEvent[]> {
-    return this.loadInitialEvents(accounts);
-  }
+function mapToCalendarEvent(item: CalendarEventRaw, accountId: string, calendar: CalendarConfig): CalendarEvent {
+  return {
+    id: item.id,
+    summary: item.summary,
+    start: item.start,
+    end: item.end,
+    htmlLink: item.htmlLink,
+    status: item.status,
+    accountId: accountId,
+    accountColor: calendar.backgroundColor, // Use calendar color
+    isPrimary: !!calendar.primary, // Set isPrimary flag
+  };
 }

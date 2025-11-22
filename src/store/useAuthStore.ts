@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { AuthService } from '../services/AuthService';
-import { CacheStorage } from '../services/CacheStorage';
 import { CalendarService } from '../services/CalendarService';
+import { StorageService } from '../services/StorageService';
 import type { CalendarConfig, UserAccount } from '../types/auth';
 
 export interface AuthState {
@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
 
   init: async () => {
-    const accounts = await CacheStorage.getAccounts();
+    const accounts = await StorageService.getAccounts();
     if (accounts) {
       set({ accounts });
     }
@@ -35,6 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   refreshAccounts: async () => {
     set({ isLoading: true, error: null });
+    console.log('=== refreshAccounts');
     try {
       const currentAccounts = get().accounts;
       const updatedAccounts = await Promise.all(
@@ -43,13 +44,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const calendars = await CalendarService.getUserCalendars(account);
 
             // Merge with existing visibility settings
-            const mergedCalendars = calendars.map((cal: any) => {
+            const mergedCalendars = calendars.map((cal) => {
               const existingCal = account.calendars?.find((c) => c.id === cal.id);
               return {
                 id: cal.id,
                 summary: cal.summary,
                 backgroundColor: cal.backgroundColor,
                 primary: !!cal.primary,
+                selected: cal.selected,
                 visible: existingCal ? existingCal.visible : cal.selected !== false,
               };
             });
@@ -65,8 +67,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }),
       );
 
+      await CalendarService.loadInitialEvents(updatedAccounts);
+
       set({ accounts: updatedAccounts, isLoading: false });
-      await CacheStorage.saveAccounts(updatedAccounts);
+      await StorageService.saveAccounts(updatedAccounts);
     } catch (err: any) {
       set({ error: err.message || 'Failed to refresh accounts', isLoading: false });
     }
@@ -80,11 +84,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Fetch calendars for the new account
       try {
         const calendars = await CalendarService.getUserCalendars(newAccount);
-        newAccount.calendars = calendars.map((cal: any) => ({
+        newAccount.calendars = calendars.map((cal) => ({
           id: cal.id,
           summary: cal.summary,
           backgroundColor: cal.backgroundColor,
           primary: !!cal.primary,
+          selected: cal.selected,
           visible: cal.selected !== false, // Default to visible unless explicitly unselected
         }));
       } catch (calError) {
@@ -118,7 +123,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       set({ accounts: updatedAccounts, isLoading: false });
-      await CacheStorage.saveAccounts(updatedAccounts);
+      await StorageService.saveAccounts(updatedAccounts);
     } catch (err: any) {
       set({ error: err.message || 'Failed to add account', isLoading: false });
     }
@@ -127,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   removeAccount: async (accountId: string) => {
     const updatedAccounts = get().accounts.filter((a) => a.id !== accountId);
     set({ accounts: updatedAccounts });
-    await CacheStorage.saveAccounts(updatedAccounts);
+    await StorageService.saveAccounts(updatedAccounts);
     // Note: We might want to revoke the token here too
   },
 
@@ -146,7 +151,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         updatedAccounts[accountIndex] = account;
         set({ accounts: updatedAccounts });
-        await CacheStorage.saveAccounts(updatedAccounts);
+        await StorageService.saveAccounts(updatedAccounts);
       }
     }
   },
@@ -180,22 +185,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const calendars = await CalendarService.getUserCalendars(updatedAccounts[accountIndex]);
           // Merge visibility
           if (updatedAccounts[accountIndex].calendars) {
-            updatedAccounts[accountIndex].calendars = calendars.map((cal: any) => {
+            updatedAccounts[accountIndex].calendars = calendars.map((cal) => {
               const existingCal = updatedAccounts[accountIndex].calendars?.find((c) => c.id === cal.id);
               return {
                 id: cal.id,
                 summary: cal.summary,
                 backgroundColor: cal.backgroundColor,
                 primary: !!cal.primary,
+                selected: cal.selected,
                 visible: existingCal ? existingCal.visible : cal.selected !== false,
               };
             });
           } else {
-            updatedAccounts[accountIndex].calendars = calendars.map((cal: any) => ({
+            updatedAccounts[accountIndex].calendars = calendars.map((cal) => ({
               id: cal.id,
               summary: cal.summary,
               backgroundColor: cal.backgroundColor,
               primary: !!cal.primary,
+              selected: cal.selected,
               visible: cal.selected !== false,
             }));
           }
@@ -204,7 +211,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         set({ accounts: updatedAccounts, isLoading: false });
-        await CacheStorage.saveAccounts(updatedAccounts);
+        await StorageService.saveAccounts(updatedAccounts);
       } else {
         throw new Error('Account not found');
       }

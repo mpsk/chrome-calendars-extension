@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format } from 'date-fns';
 
 const LOCALE = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
 
@@ -16,7 +16,6 @@ const DATE_FORMAT = {
 };
 
 export class Formatter {
-
   static DATE_FORMAT = DATE_FORMAT;
 
   static date = new Intl.DateTimeFormat(LOCALE, {
@@ -25,6 +24,14 @@ export class Formatter {
 
   static dateFormat = (date: Date, pattern: ValueOf<typeof DATE_FORMAT> = DATE_FORMAT['EEEE, MMMM d']) => {
     return format(date, pattern);
+  };
+
+  // Helper to parse date string safely to local midnight
+  static parseDate = (dateStr: string): Date => {
+    if (!dateStr) return new Date();
+    if (dateStr.includes('T')) return new Date(dateStr); // ISO string with time
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d); // Local midnight
   };
 
   date: Intl.DateTimeFormat;
@@ -44,5 +51,4 @@ export class Formatter {
       console.error(e);
     }
   }
-
 }

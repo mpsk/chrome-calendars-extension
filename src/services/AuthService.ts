@@ -17,6 +17,16 @@ const SCOPES = [
 ];
 
 export class AuthService {
+  static async login(): Promise<UserAccount> {
+    const authToken = await this.launchAuthFlow(true);
+    const userInfo = await this.fetchUserInfo(authToken.token);
+
+    return {
+      ...userInfo,
+      token: authToken,
+    };
+  }
+
   static async refreshToken(email: string): Promise<UserAccount> {
     const authToken = await this.launchAuthFlow(false, email);
 
@@ -34,13 +44,21 @@ export class AuthService {
     };
   }
 
-  static async login(): Promise<UserAccount> {
-    const authToken = await this.launchAuthFlow(true);
-    const userInfo = await this.fetchUserInfo(authToken.token);
-
+  private static async fetchUserInfo(token: AuthToken['token']): Promise<Omit<UserAccount, 'token'>> {
+    const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info');
+    }
+    const data = await response.json();
     return {
-      ...userInfo,
-      token: authToken,
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      picture: data.picture,
     };
   }
 
@@ -95,23 +113,5 @@ export class AuthService {
         },
       );
     });
-  }
-
-  private static async fetchUserInfo(token: AuthToken['token']): Promise<Omit<UserAccount, 'token'>> {
-    const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch user info');
-    }
-    const data = await response.json();
-    return {
-      id: data.id,
-      email: data.email,
-      name: data.name,
-      picture: data.picture,
-    };
   }
 }

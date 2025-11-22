@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CalendarEvent } from '../../services/CalendarService';
+import type { CalendarEvent } from '../../types/auth';
 import { Formatter } from '../../utils/Formatter';
 import { EventItem, type EventItemProps } from './EventItem';
 import styles from './EventsGroup.module.scss';

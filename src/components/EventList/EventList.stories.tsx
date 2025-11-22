@@ -2,10 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { Decorator } from '@storybook/react';
 import { mockChromeApi } from '../../mocks/mockContext';
 import { allDayEvents, mockAccounts, mockEvents, timedEvents } from '../../mocks/mockData';
-import type { CalendarEvent } from '../../services/CalendarService';
 import { CalendarService } from '../../services/CalendarService';
 import { useAuthStore } from '../../store/useAuthStore';
-import type { UserAccount } from '../../types/auth';
+import type { CalendarEvent, UserAccount } from '../../types/auth';
 import { EventList } from './EventList';
 
 // Decorator to set up mocks before rendering

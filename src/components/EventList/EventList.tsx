@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { CalendarService } from '../../services/CalendarService';
-import type { CalendarEvent } from '../../services/CalendarService';
+import { StorageService } from '../../services/StorageService';
 import { useAuthStore } from '../../store/useAuthStore';
+import type { CalendarEvent } from '../../types/auth';
 import { Formatter } from '../../utils/Formatter';
 import styles from './EventList.module.scss';
 import { EventsGroup } from './EventsGroup';
@@ -30,6 +31,12 @@ export const EventList = () => {
 
       setLoading(true);
       try {
+        const cachedEvents = await StorageService.getInitialEvents();
+        console.log('=== cachedEvents', cachedEvents);
+        if (cachedEvents.length > 0) {
+          setEvents(cachedEvents);
+          return;
+        }
         const initialEvents = await CalendarService.loadInitialEvents(accounts);
         console.log('=== initialEvents', initialEvents);
         setEvents(initialEvents);
@@ -104,14 +111,6 @@ export const EventList = () => {
     window.open(url, '_blank');
   };
 
-  // Helper to parse date string safely to local midnight
-  const parseDate = (dateStr: string) => {
-    if (!dateStr) return new Date();
-    if (dateStr.includes('T')) return new Date(dateStr); // ISO string with time
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d); // Local midnight
-  };
-
   // Group events by date
   const groupedEvents = events.reduce(
     (groups, event) => {
@@ -119,7 +118,7 @@ export const EventList = () => {
       if (!dateStr) return groups;
 
       // Use the safe parser to get the date object
-      const dateObj = parseDate(dateStr);
+      const dateObj = Formatter.parseDate(dateStr);
       const dateKey = Formatter.dateFormat(dateObj, Formatter.DATE_FORMAT.YYYY_MM_DD);
 
       if (!groups[dateKey]) {

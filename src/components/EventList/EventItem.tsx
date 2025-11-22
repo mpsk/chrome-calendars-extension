@@ -1,5 +1,6 @@
 import React from 'react';
-import type { CalendarEvent } from '../../services/CalendarService';
+import classNames from 'classnames';
+import type { CalendarEvent } from '../../types/auth';
 import { Formatter } from '../../utils/Formatter';
 import styles from './EventItem.module.scss';
 
@@ -23,9 +24,14 @@ export const EventItem: React.FC<EventItemProps> = ({ item, onClick }) => {
   const isDone = item.end.dateTime ? new Date(item.end.dateTime) < new Date() : false;
 
   return (
-    <div key={item.id} className={`${styles.eventCard} ${isDone ? styles.isDone : ''}`} onClick={() => onClick(item)}>
+    <div
+      key={item.id}
+      className={classNames(styles.eventCard, { [styles.isDone]: isDone, [styles.allDay]: isAllDay })}
+      style={{ border: item.accountColor ? `1px solid ${item.accountColor}` : undefined }}
+      onClick={() => onClick(item)}
+    >
       <div
-        className={`${styles.timeBlock} ${isAllDay ? styles.allDay : styles.hasTime}`}
+        className={classNames(styles.timeBlock, { [styles.allDay]: isAllDay, [styles.hasTime]: !isAllDay })}
         style={{ backgroundColor: item.accountColor || undefined }}
       >
         {!isAllDay && (
