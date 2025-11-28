@@ -4,6 +4,7 @@ import { StorageService } from '../../services/StorageService';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { CalendarEvent } from '../../types/auth';
 import { Formatter } from '../../utils/Formatter';
+import { NoAccountsView } from '../NoAccountsView/NoAccountsView';
 import styles from './EventList.module.scss';
 import { EventsGroup } from './EventsGroup';
 
@@ -58,6 +59,7 @@ export const EventList = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loading && !loadingMore && accounts.length > 0) {
+          // TODO: Fix an issue with infinite loading if all initial events are on screen, and last triggers "loadMore()"
           loadMore();
         }
       },
@@ -139,7 +141,9 @@ export const EventList = () => {
   if (error) return <div className={styles.error}>{error}</div>;
   if (events.length === 0 && accounts.length > 0)
     return <div className={styles.emptyState}>No upcoming events found.</div>;
-  if (accounts.length === 0) return <div className={styles.emptyState}>Please add an account to see events.</div>;
+  if (accounts.length === 0) {
+    return <NoAccountsView />;
+  }
 
   return (
     <div className={styles.eventList}>

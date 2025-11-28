@@ -17,7 +17,6 @@ const CALENDAR_API_V3 = {
 };
 
 export class CalendarService {
-  private static cachedPromises = new Map<string, Promise<CalendarEvent[]>>();
   private static tokenRefreshListeners = new Map<(account: UserAccount) => void, (account: UserAccount) => void>();
 
   static addTokenRefreshListener(listener: (account: UserAccount) => void) {
@@ -30,7 +29,8 @@ export class CalendarService {
 
   static async loadInitialEvents(accounts: UserAccount[]): Promise<CalendarEvent[]> {
     const now = new Date();
-    const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const futureTimeRange = 14 * 24 * 60 * 60 * 1000;
+    const twoWeeksLater = new Date(now.getTime() + futureTimeRange);
     const events = await this.fetchEventsForRange(accounts, now, twoWeeksLater);
     await StorageService.saveInitialEvents(events);
     return events;
@@ -150,9 +150,10 @@ export class CalendarService {
         response = await fetch(url, { ...init, headers: newHeaders });
 
         return { response, account: newAccount };
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         console.error('Silent refresh failed:', refreshError);
-        throw new Error(`Session expired for ${account.email}`);
+        const error = new Error(`Session expired for ${account.email}`);
+        throw error;
       }
     }
 
