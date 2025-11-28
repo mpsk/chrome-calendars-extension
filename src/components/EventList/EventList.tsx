@@ -59,6 +59,7 @@ export const EventList = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loading && !loadingMore && accounts.length > 0) {
+          // TODO: Fix an issue with infinite loading if all initial events are on screen, and last triggers "loadMore()"
           loadMore();
         }
       },
