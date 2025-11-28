@@ -140,7 +140,7 @@ export class CalendarService {
       console.log(`Token expired for ${account.email}, attempting silent refresh...`);
       try {
         // 1. Refresh the token
-        const newAccount = await AuthService.refreshToken(account.email);
+        const newAccount = await AuthService.refreshToken(account.email, account.token.refreshToken);
 
         // 2. Update the store via listeners
         this.tokenRefreshListeners.forEach((listener) => listener(newAccount));
