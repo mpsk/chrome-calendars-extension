@@ -7,7 +7,7 @@ export class StorageService {
 
   static async getAccounts(): Promise<UserAccount[]> {
     const result = await chrome.storage.local.get('accounts');
-    return result.accounts as UserAccount[];
+    return (result.accounts as UserAccount[]) || [];
   }
 
   static async saveInitialEvents(events: CalendarEvent[]) {
