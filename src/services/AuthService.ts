@@ -2,9 +2,13 @@ import type { AuthToken, UserAccount } from '../types/auth';
 
 // Webapp client ID - use import.meta.env for Vite compatibility
 const CLIENT_ID = import.meta.env.VITE_AUTH_CLIENT_ID || '';
+const CLIENT_SECRET = import.meta.env.VITE_AUTH_CLIENT_SECRET || '';
 
 if (!CLIENT_ID) {
   console.error('VITE_AUTH_CLIENT_ID is not set. Please configure your .env file.');
+}
+if (!CLIENT_SECRET) {
+  console.error('VITE_AUTH_CLIENT_SECRET is not set. Please configure your .env file.');
 }
 
 const TOKEN_TTL = 3600;
@@ -16,9 +20,12 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
 export class AuthService {
   static async login(): Promise<UserAccount> {
-    const authToken = await this.launchAuthFlow(true);
+    const { code } = await this.launchAuthFlow(true);
+    const authToken = await this.exchangeCodeForToken(code);
     const userInfo = await this.fetchUserInfo(authToken.token);
 
     return {
@@ -27,8 +34,13 @@ export class AuthService {
     };
   }
 
-  static async refreshToken(email: string): Promise<UserAccount> {
-    const authToken = await this.launchAuthFlow(false, email);
+  static async refreshToken(email: string, refreshToken?: string): Promise<UserAccount> {
+    if (!refreshToken) {
+      console.warn(`No refresh token for ${email}, cannot refresh silently.`);
+      throw new Error('No refresh token available');
+    }
+
+    const authToken = await this.exchangeRefreshToken(refreshToken);
 
     // We don't strictly need to fetch user info again if we trust the email match,
     // but it's good practice to verify the token belongs to the user we expect.
@@ -62,21 +74,15 @@ export class AuthService {
     };
   }
 
-  private static async launchAuthFlow(interactive: boolean, loginHint?: string): Promise<AuthToken> {
+  private static async launchAuthFlow(interactive: boolean): Promise<{ code: string }> {
     return new Promise((resolve, reject) => {
       const redirectUri = chrome.identity.getRedirectURL();
-      let authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(SCOPES.join(' '))}`;
-
-      if (loginHint) {
-        authUrl += `&login_hint=${encodeURIComponent(loginHint)}`;
-      }
+      const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(SCOPES.join(' '))}&access_type=offline&prompt=consent`;
 
       if (interactive) {
         console.log('OAuth Debug Info:');
         console.log('Redirect URI:', redirectUri);
         console.log('Auth URL:', authUrl);
-      } else {
-        console.log('Refreshing token for:', loginHint);
       }
 
       chrome.identity.launchWebAuthFlow(
@@ -93,25 +99,74 @@ export class AuthService {
           }
 
           const url = new URL(redirectUrl);
-          const params = new URLSearchParams(url.hash.substring(1));
-          const token = params.get('access_token');
-          const expiresIn = params.get('expires_in');
+          const code = url.searchParams.get('code');
 
-          console.log('=== launchWebAuthFlow', { expiresIn });
-
-          if (!token) {
-            reject(new Error('No token found'));
+          if (!code) {
+            reject(new Error('No code found'));
             return;
           }
 
-          const authToken: AuthToken = {
-            token,
-            expiry: Date.now() + (Number(expiresIn) || TOKEN_TTL) * 1000,
-          };
-
-          resolve(authToken);
+          resolve({ code });
         },
       );
     });
+  }
+
+  private static async exchangeCodeForToken(code: string): Promise<AuthToken> {
+    const redirectUri = chrome.identity.getRedirectURL();
+    const params = new URLSearchParams();
+    params.append('client_id', CLIENT_ID);
+    params.append('client_secret', CLIENT_SECRET);
+    params.append('code', code);
+    params.append('grant_type', 'authorization_code');
+    params.append('redirect_uri', redirectUri);
+
+    const response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to exchange code for token: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return {
+      token: data.access_token,
+      expiry: Date.now() + (data.expires_in || TOKEN_TTL) * 1000,
+      refreshToken: data.refresh_token,
+    };
+  }
+
+  private static async exchangeRefreshToken(refreshToken: string): Promise<AuthToken> {
+    const params = new URLSearchParams();
+    params.append('client_id', CLIENT_ID);
+    params.append('client_secret', CLIENT_SECRET);
+    params.append('refresh_token', refreshToken);
+    params.append('grant_type', 'refresh_token');
+
+    const response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to refresh token: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return {
+      token: data.access_token,
+      expiry: Date.now() + (data.expires_in || TOKEN_TTL) * 1000,
+      refreshToken: data.refresh_token || refreshToken, // Keep old refresh token if new one not provided
+    };
   }
 }
