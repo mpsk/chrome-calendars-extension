@@ -19,8 +19,26 @@ export const mockChromeApi = () => {
     },
   };
 
-  if (typeof window !== 'undefined' && !(window as any).chrome) {
-    (window as any).chrome = mockChrome;
+  if (typeof window !== 'undefined') {
+    const w = window as any;
+    if (!w.chrome) {
+      w.chrome = {};
+    }
+
+    // Ensure storage is mocked
+    if (!w.chrome.storage) {
+      w.chrome.storage = mockChrome.storage;
+    } else {
+      w.chrome.storage.local = {
+        ...w.chrome.storage.local,
+        ...mockChrome.storage.local,
+      };
+    }
+
+    // Ensure runtime is mocked
+    if (!w.chrome.runtime) {
+      w.chrome.runtime = mockChrome.runtime;
+    }
   }
 };
 
